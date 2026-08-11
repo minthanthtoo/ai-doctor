@@ -1,0 +1,24 @@
+{
+    auto_https disable_redirects
+}
+
+:443 {
+    tls internal
+    encode zstd gzip
+
+    @api path /v1/* /health /docs* /openapi.json
+    reverse_proxy @api relay:8080
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "no-referrer"
+        Permissions-Policy "camera=(self), microphone=(), geolocation=()"
+        Content-Security-Policy "default-src 'self'; connect-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; script-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
+    }
+
+    root * /srv
+    try_files {path} /index.html
+    file_server
+}

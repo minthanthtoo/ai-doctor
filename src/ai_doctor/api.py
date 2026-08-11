@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
@@ -27,6 +28,7 @@ from ai_doctor.models.gateway import (
     OpenAICompatibleTransport,
 )
 from ai_doctor.orchestrator import ClinicalOrchestrator, ClinicalWorkflowError
+from ai_doctor.relay import mount_longitudinal_routes
 from ai_doctor.settings import Settings
 from ai_doctor.storage.sqlite import (
     CaseNotFoundError,
@@ -273,5 +275,14 @@ def create_app(
             granted_by_role=principal.role.value,
         )
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    mount_longitudinal_routes(
+        app,
+        authenticate=authenticate,
+        settings=settings,
+        release_manifest_path=(
+            Path(__file__).resolve().parent / "config" / "release_manifest_v3.json"
+        ),
+    )
 
     return app

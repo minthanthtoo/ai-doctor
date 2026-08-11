@@ -1,0 +1,194 @@
+{
+  "pack_id": "cardiometabolic-v0-preclinical",
+  "release": "2026.08.11-preclinical.1",
+  "jurisdiction": "MM",
+  "population": {
+    "minimum_age_years": 18,
+    "maximum_age_years": 130,
+    "pregnancy_statuses": ["not_pregnant", "not_applicable"]
+  },
+  "approved_for_clinical_use": false,
+  "clinical_review_status": "required",
+  "burmese_language_review_status": "required",
+  "runtime_web_browsing": false,
+  "coverage": {
+    "en": "Preclinical screening of a limited set of explicit symptoms and home vital-sign thresholds. A result without a detected trigger does not rule out serious illness.",
+    "my": "အိမ်တွင်တိုင်းတာသော ကိုယ်ခန္ဓာအညွှန်းများနှင့် ရှင်းလင်းစွာထည့်သွင်းထားသည့် လက္ခဏာအချို့ကိုသာ စမ်းသပ်အကဲဖြတ်ထားခြင်း ဖြစ်သည်။ သတိပေးချက်မတွေ့ခြင်းသည် ပြင်းထန်သောရောဂါ မရှိကြောင်း မဆိုလိုပါ။"
+  },
+  "content": {
+    "emergency_now": {
+      "en": "Potential emergency warning signs were identified. Contact your configured local emergency service now or go to the nearest emergency-capable facility. Do not delay in-person care to continue using this system.",
+      "my": "အရေးပေါ်အန္တရာယ်လက္ခဏာ ဖြစ်နိုင်သည်။ သင်သတ်မှတ်ထားသော ဒေသတွင်းအရေးပေါ်ဝန်ဆောင်မှုကို ယခုဆက်သွယ်ပါ သို့မဟုတ် အနီးဆုံး အရေးပေါ်ကုသနိုင်သည့်ဌာနသို့ ချက်ချင်းသွားပါ။ ဤစနစ်ကို ဆက်သုံးရန် လူကိုယ်တိုင်ကုသမှုကို မနှောင့်နှေးပါနှင့်။"
+    },
+    "insufficient_data": {
+      "en": "There is not enough current, reliable information to assess this concern. This is not reassurance and no clinician is monitoring this record.",
+      "my": "ဤအခြေအနေကို အကဲဖြတ်ရန် လက်ရှိယုံကြည်ရသော အချက်အလက် မလုံလောက်ပါ။ ဤစာသားသည် စိတ်ချရကြောင်း မဆိုလိုဘဲ ဆရာဝန်က ဤမှတ်တမ်းကို စောင့်ကြည့်နေခြင်းလည်း မရှိပါ။"
+    },
+    "possibility_disclaimer": {
+      "en": "These are possibilities to help organize questions, not diagnoses. The system cannot rule out serious illness.",
+      "my": "ဤအချက်များသည် မေးခွန်းများကို စုစည်းရန် ဖြစ်နိုင်ခြေများသာဖြစ်ပြီး ရောဂါအတည်ပြုချက် မဟုတ်ပါ။ ဤစနစ်သည် ပြင်းထန်သောရောဂါကို ပယ်ချ၍ မရပါ။"
+    },
+    "generic_reminder": {
+      "en": "You have a health reminder.",
+      "my": "သင့်တွင် ကျန်းမာရေးသတိပေးချက်တစ်ခု ရှိပါသည်။"
+    }
+  },
+  "red_flag_symptoms": [
+    {
+      "id": "chest_pain",
+      "terms": ["chest pain", "chest pressure", "chest tightness", "ရင်ဘတ်နာ", "ရင်ဘတ်အောင့်"],
+      "content_id": "emergency_now"
+    },
+    {
+      "id": "breathing_difficulty",
+      "terms": ["shortness of breath", "difficulty breathing", "cannot breathe", "breathless", "အသက်ရှူခက်", "အသက်မရှူနိုင်"],
+      "content_id": "emergency_now"
+    },
+    {
+      "id": "stroke_sign",
+      "terms": ["face droop", "one-sided weakness", "slurred speech", "sudden weakness", "မျက်နှာရွဲ့", "တစ်ဖက်အားနည်း", "စကားမပီ"],
+      "content_id": "emergency_now"
+    },
+    {
+      "id": "altered_consciousness",
+      "terms": ["unconscious", "confused", "seizure", "fainted", "passed out", "သတိလစ်", "တက်ခြင်း", "စိတ်ရှုပ်ထွေး"],
+      "content_id": "emergency_now"
+    },
+    {
+      "id": "severe_bleeding",
+      "terms": ["vomiting blood", "coughing blood", "black stool", "uncontrolled bleeding", "သွေးအန်", "ဝမ်းမည်း", "သွေးမတိတ်"],
+      "content_id": "emergency_now"
+    },
+    {
+      "id": "anaphylaxis",
+      "terms": ["tongue swelling", "throat swelling", "anaphylaxis", "လျှာဖောင်း", "လည်ချောင်းဖောင်း"],
+      "content_id": "emergency_now"
+    },
+    {
+      "id": "self_harm",
+      "terms": ["suicidal", "suicide", "self harm", "hurt myself", "ကိုယ့်ကိုယ်ကို သတ်", "ကိုယ့်ကိုယ်ကို ထိခိုက်"],
+      "content_id": "emergency_now"
+    }
+  ],
+  "vital_rules": [
+    {
+      "id": "oxygen_very_low",
+      "kind": "oxygen_saturation",
+      "field": "value",
+      "operator": "lte",
+      "threshold": 90,
+      "unit": "percent",
+      "urgency": "emergency_now",
+      "content_id": "emergency_now"
+    },
+    {
+      "id": "systolic_very_low",
+      "kind": "blood_pressure",
+      "field": "systolic",
+      "operator": "lt",
+      "threshold": 90,
+      "unit": "mmHg",
+      "urgency": "emergency_now",
+      "content_id": "emergency_now"
+    },
+    {
+      "id": "heart_rate_very_high",
+      "kind": "heart_rate",
+      "field": "value",
+      "operator": "gt",
+      "threshold": 150,
+      "unit": "bpm",
+      "urgency": "emergency_now",
+      "content_id": "emergency_now"
+    },
+    {
+      "id": "respiratory_rate_very_high",
+      "kind": "respiratory_rate",
+      "field": "value",
+      "operator": "gt",
+      "threshold": 30,
+      "unit": "breaths/min",
+      "urgency": "emergency_now",
+      "content_id": "emergency_now"
+    },
+    {
+      "id": "glucose_very_low",
+      "kind": "glucose",
+      "field": "value",
+      "operator": "lt",
+      "threshold": 54,
+      "unit": "mg/dL",
+      "urgency": "emergency_now",
+      "content_id": "emergency_now"
+    },
+    {
+      "id": "temperature_very_high",
+      "kind": "temperature",
+      "field": "value",
+      "operator": "gte",
+      "threshold": 40,
+      "unit": "C",
+      "urgency": "emergency_now",
+      "content_id": "emergency_now"
+    }
+  ],
+  "required_profile_fields": ["age_years", "pregnancy_status"],
+  "question_catalog": [
+    {"id": "q_chest_pain", "en": "Do you have chest pain, pressure, or tightness now?", "my": "ယခု ရင်ဘတ်နာခြင်း၊ အောင့်ခြင်း သို့မဟုတ် ဖိအားခံစားရခြင်း ရှိပါသလား။", "safety_critical": true},
+    {"id": "q_breathing", "en": "Are you having difficulty breathing now?", "my": "ယခု အသက်ရှူခက်ခဲနေပါသလား။", "safety_critical": true},
+    {"id": "q_neurologic", "en": "Did you suddenly develop facial droop, weakness on one side, or speech difficulty?", "my": "ရုတ်တရက် မျက်နှာရွဲ့ခြင်း၊ ကိုယ်တစ်ဖက်အားနည်းခြင်း သို့မဟုတ် စကားမပီခြင်း ဖြစ်လာပါသလား။", "safety_critical": true},
+    {"id": "q_repeat_measurement", "en": "Was this measurement repeated after checking the device and technique?", "my": "ကိရိယာနှင့် တိုင်းတာနည်းကို စစ်ဆေးပြီးနောက် ထပ်မံတိုင်းတာထားပါသလား။", "safety_critical": false},
+    {"id": "q_measurement_time", "en": "When was this measured?", "my": "ဤတိုင်းတာချက်ကို မည်သည့်အချိန်တွင် တိုင်းတာခဲ့ပါသလဲ။", "safety_critical": false}
+  ],
+  "terminology": [
+    {"id": "possibility.measurement_issue", "en": "Measurement or device issue", "my": "တိုင်းတာမှု သို့မဟုတ် ကိရိယာဆိုင်ရာ ပြဿနာ"},
+    {"id": "possibility.blood_pressure_problem", "en": "Blood-pressure problem", "my": "သွေးပေါင်ချိန်ဆိုင်ရာ ပြဿနာ"},
+    {"id": "possibility.glucose_problem", "en": "Blood-glucose problem", "my": "သွေးတွင်းသကြားဓာတ်ဆိုင်ရာ ပြဿနာ"},
+    {"id": "possibility.oxygen_problem", "en": "Oxygen or breathing problem", "my": "အောက်ဆီဂျင် သို့မဟုတ် အသက်ရှူမှုဆိုင်ရာ ပြဿနာ"},
+    {"id": "possibility.infection", "en": "Infection or inflammatory illness", "my": "ကူးစက်ရောဂါ သို့မဟုတ် ရောင်ရမ်းမှုဆိုင်ရာ အခြေအနေ"},
+    {"id": "possibility.heart_rate_response", "en": "Heart-rate or stress response", "my": "နှလုံးခုန်နှုန်း သို့မဟုတ် စိတ်ဖိစီးမှုတုံ့ပြန်မှု"}
+  ],
+  "alert_policies": [
+    {
+      "id": "emergency-repeat-v0",
+      "level": "emergency_now",
+      "repeat_after_seconds": 300,
+      "max_repeats": 6,
+      "expires_after_seconds": 7200,
+      "quiet_hours_apply": false,
+      "message_content_id": "generic_reminder"
+    },
+    {
+      "id": "routine-reminder-v0",
+      "level": "information",
+      "repeat_after_seconds": 86400,
+      "max_repeats": 2,
+      "expires_after_seconds": 604800,
+      "quiet_hours_apply": true,
+      "message_content_id": "generic_reminder"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "WHO-SMART-GUIDELINES",
+      "title": "WHO SMART Guidelines",
+      "uri": "https://www.who.int/teams/digital-health-and-innovation/smart-guidelines",
+      "jurisdiction": "global",
+      "version": "accessed-2026-08-11"
+    },
+    {
+      "id": "WHO-AI-LMM-2024",
+      "title": "Ethics and governance of artificial intelligence for health: guidance on large multi-modal models",
+      "uri": "https://www.who.int/publications/b/70584",
+      "jurisdiction": "global",
+      "version": "2024"
+    },
+    {
+      "id": "MM-MOH-BEPHS-2021",
+      "title": "Clinical Management Guidelines of Basic Essential Package of Health Services",
+      "uri": "https://www.moh.gov.mm/wp-content/uploads/2025/08/2021-8-1_Clinical-Management-Guidelines.pdf",
+      "jurisdiction": "MM",
+      "version": "2021"
+    }
+  ]
+}

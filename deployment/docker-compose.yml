@@ -1,0 +1,75 @@
+services:
+  pwa:
+    build:
+      context: ..
+      dockerfile: apps/pwa/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8443:443"
+    depends_on:
+      relay:
+        condition: service_healthy
+
+  relay:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      AI_DOCTOR_ENV: preclinical
+      AI_DOCTOR_DATABASE: /data/ai_doctor_personal_steward.db
+      AI_DOCTOR_EMERGENCY_SERVICE_LABEL: configured local emergency service
+      AI_DOCTOR_TOKENS_JSON: >-
+        {"change-this-patient-token":{"user_id":"personal-profile","role":"patient"},"change-this-safety-token":{"user_id":"local-safety-auditor","role":"clinical_safety_officer"}}
+      AI_DOCTOR_MODEL_GATEWAY_ENABLED: "false"
+    volumes:
+      - ./data:/data
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  push-worker:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: ["ai-doctor-push-worker"]
+    environment:
+      AI_DOCTOR_ENV: preclinical
+      AI_DOCTOR_DATABASE: /data/ai_doctor_personal_steward.db
+      AI_DOCTOR_EMERGENCY_SERVICE_LABEL: configured local emergency service
+      AI_DOCTOR_TOKENS_JSON: >-
+        {"change-this-patient-token":{"user_id":"personal-profile","role":"patient"}}
+      AI_DOCTOR_PUSH_ENABLED: "false"
+      AI_DOCTOR_PUSH_VAPID_PUBLIC_KEY: ""
+      AI_DOCTOR_PUSH_VAPID_PRIVATE_KEY: ""
+      AI_DOCTOR_PUSH_VAPID_SUBJECT: "mailto:change-me@example.com"
+    volumes:
+      - ./data:/data
+    depends_on:
+      relay:
+        condition: service_healthy
+
+  backup:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: ["ai-doctor-backup"]
+    environment:
+      AI_DOCTOR_ENV: preclinical
+      AI_DOCTOR_DATABASE: /data/ai_doctor_personal_steward.db
+      AI_DOCTOR_EMERGENCY_SERVICE_LABEL: configured local emergency service
+      AI_DOCTOR_BACKUP_DIRECTORY: /backups
+      AI_DOCTOR_BACKUP_INTERVAL_SECONDS: "86400"
+      AI_DOCTOR_BACKUP_RETENTION_DAYS: "30"
+    volumes:
+      - ./data:/data
+      - ./backups:/backups
+    depends_on:
+      - relay

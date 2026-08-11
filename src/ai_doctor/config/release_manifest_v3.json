@@ -1,0 +1,59 @@
+{
+  "release_id": "personal-steward-v3-preclinical.1",
+  "channel": "preclinical",
+  "intended_use": "Single-user adult non-pregnancy personal health organization, limited danger-signal screening, possibility mapping, and user-owned reminders.",
+  "jurisdiction": "MM",
+  "languages": ["my", "en"],
+  "approved_for_clinical_use": false,
+  "clinical_owner": null,
+  "language_review_owner": null,
+  "runtime_authority": "none",
+  "capabilities": {
+    "offline_emergency_screen": "preclinical_enabled",
+    "urgent_care_routing": "preclinical_enabled",
+    "possibility_map": "preclinical_enabled",
+    "signed_education": "preclinical_enabled",
+    "home_vital_monitoring": "preclinical_enabled",
+    "user_owned_reminders": "enabled",
+    "external_llm_reasoning": "disabled_by_default",
+    "clinician_diagnosis": "disabled",
+    "personalized_treatment": "disabled",
+    "prescription_draft": "disabled",
+    "e_prescribing": "disabled",
+    "emergency_dispatch": "disabled",
+    "trusted_contact_alert": "disabled"
+  },
+  "kill_switches": {
+    "model_egress": true,
+    "possibility_map": false,
+    "scheduled_notifications": false,
+    "sync_read_only": false,
+    "clinical_feature_freeze": false
+  },
+  "artifacts": {
+    "1a518275de8d8bcc81a0b7de57356de29141ef9b63ad9643722ab272d96b2f8f": {
+      "kind": "clinical_pack",
+      "path": "knowledge/v3/cardiometabolic_pack.json",
+      "required": true
+    }
+  },
+  "model_policy": {
+    "maximum_reasoning_rounds": 2,
+    "maximum_model_calls": 3,
+    "maximum_retrieval_calls": 4,
+    "maximum_input_tokens": 32000,
+    "maximum_output_tokens": 4000,
+    "maximum_wall_seconds": 45,
+    "maximum_transport_retries": 1,
+    "background_calls": false,
+    "automatic_unqualified_fallback": false
+  },
+  "known_limitations": [
+    "No clinical or Burmese-language reviewer has approved this release.",
+    "The emergency screen covers a limited preclinical rule set and cannot rule out serious illness.",
+    "No clinician monitors user-entered information or missed reminders.",
+    "The relay and browser push path do not guarantee delivery or acknowledgement.",
+    "No diagnosis, personalized treatment, prescription, order, dispatch, or external contact is authorized."
+  ],
+  "signature": null
+}

@@ -11,4 +11,8 @@ build/
 *.db-shm
 *.db-wal
 .env
-
+node_modules/
+apps/pwa/dist/
+*.tsbuildinfo
+deployment/data/
+deployment/backups/

@@ -1,4 +1,8 @@
-# AI Doctor Preclinical Clinical Decision Platform
+# AI Doctor OS v3 — Preclinical Personal Health Steward
+
+The repository now includes a working local-first personal longitudinal health steward alongside the preserved clinician-supervised v0 reference API. The v3 PWA stores an encrypted append-only record on the phone, performs deterministic safety preflight, manages guided workups and user-owned reminders, and can sync only encrypted envelopes to a private home relay.
+
+Start with [Personal Steward v3](docs/PERSONAL_STEWARD_V3.md) for the implemented architecture, local/home-server setup, and exact safety boundary. The older clinician-supervised capability path remains documented below for development compatibility.
 
 An executable, clinician-supervised implementation of four clinical capability families:
 

@@ -1,0 +1,14 @@
+{
+  "name": "ai-doctor-os-v3",
+  "private": true,
+  "workspaces": [
+    "apps/pwa",
+    "packages/clinical-kernel"
+  ],
+  "scripts": {
+    "dev": "npm --workspace @ai-doctor/pwa run dev",
+    "build": "npm --workspace @ai-doctor/clinical-kernel run typecheck && npm --workspace @ai-doctor/pwa run build",
+    "test:frontend": "npm --workspace @ai-doctor/clinical-kernel run test && npm --workspace @ai-doctor/pwa run test",
+    "typecheck": "npm --workspace @ai-doctor/clinical-kernel run typecheck && npm --workspace @ai-doctor/pwa run typecheck"
+  }
+}

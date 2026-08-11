@@ -1,5 +1,11 @@
 # Implementation status and release boundary
 
+## v3 personal steward vertical slice
+
+The repository also contains the v3 single-user, adult, non-pregnancy personal steward implementation. It includes the encrypted offline PWA, longitudinal event replay, deterministic TypeScript clinical kernel, signed preclinical cardiometabolic pack, encrypted relay, generic push scheduler/worker, consent-bound bounded model broker, transactional backup worker, and home-server deployment.
+
+This is feature-complete as an engineering vertical slice, not clinically released. The included clinical pack is explicitly unapproved, the model path is disabled by default, and treatment, prescribing, dispatch, and clinician-monitoring claims remain prohibited. See [Personal Longitudinal Health Steward v3](PERSONAL_STEWARD_V3.md) for operation and remaining gates.
+
 ## Meaning of “implemented” here
 
 All four requested capability paths execute end to end through typed API contracts, authorization, deterministic safety policy, case persistence, review transitions, immutable versions, and audit events. This is a **preclinical reference implementation**. “Implemented” does not mean clinically validated, licensed, or safe for unsupervised patient care.

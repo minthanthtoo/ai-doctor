@@ -24,6 +24,10 @@ class Settings:
     model_gateway_timeout_seconds: float = 20.0
     model_gateway_release: str = "optional-diagnosis-model-0.1.0"
     model_gateway_allowed_hosts: Tuple[str, ...] = ()
+    push_enabled: bool = False
+    push_vapid_public_key: Optional[str] = None
+    push_vapid_private_key: Optional[str] = None
+    push_vapid_subject: Optional[str] = None
 
     def __post_init__(self) -> None:
         if not self.emergency_service_label.strip() or len(self.emergency_service_label) > 200:
@@ -123,6 +127,11 @@ class Settings:
                 "AI_DOCTOR_MODEL_GATEWAY_RELEASE", "optional-diagnosis-model-0.1.0"
             ),
             model_gateway_allowed_hosts=allowed_hosts,
+            push_enabled=os.getenv("AI_DOCTOR_PUSH_ENABLED", "false").lower()
+            in {"1", "true", "yes"},
+            push_vapid_public_key=os.getenv("AI_DOCTOR_PUSH_VAPID_PUBLIC_KEY"),
+            push_vapid_private_key=os.getenv("AI_DOCTOR_PUSH_VAPID_PRIVATE_KEY"),
+            push_vapid_subject=os.getenv("AI_DOCTOR_PUSH_VAPID_SUBJECT"),
         )
 
 
