@@ -1,0 +1,33 @@
+{
+  "snapshot": {
+    "patient_ref": "example-patient-001",
+    "encounter_ref": "example-encounter-001",
+    "age_years": 45,
+    "sex_at_birth": "male",
+    "pregnancy_status": "not_applicable",
+    "symptoms": [
+      {
+        "name": "headache",
+        "severity_0_to_10": 3,
+        "verification_status": "patient_reported"
+      }
+    ],
+    "allergy_status_confirmed": true,
+    "medication_list_confirmed": true,
+    "vitals": {
+      "heart_rate_bpm": 72,
+      "respiratory_rate_bpm": 14,
+      "systolic_bp_mmhg": 120,
+      "diastolic_bp_mmhg": 75,
+      "oxygen_saturation_percent": 98,
+      "temperature_c": 36.8,
+      "verification_status": "source_verified"
+    },
+    "confirmed_by_clinician": true
+  },
+  "requested_capabilities": [
+    "emergency_triage",
+    "diagnosis_support",
+    "patient_advice"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "release": "diagnosis-patterns-0.1.0-preclinical",
+  "coverage": "Preclinical, adult-oriented syndromic pattern support for a small set of common presenting symptoms. It is not a diagnostic device, is incomplete, and never establishes or excludes a condition.",
+  "maximum_hypotheses": 5,
+  "patterns": [
+    {"id": "chest", "terms": ["chest pain", "chest pressure", "chest tightness"], "problem": "chest discomfort", "hypotheses": [{"name": "Acute coronary syndrome", "dangerous": true}, {"name": "Pulmonary embolism", "dangerous": true}, {"name": "Acute aortic syndrome", "dangerous": true}, {"name": "Non-specific chest pain", "dangerous": false}]},
+    {"id": "breathing", "terms": ["shortness of breath", "difficulty breathing", "trouble breathing", "breathless"], "problem": "breathing difficulty", "hypotheses": [{"name": "Acute respiratory or cardiac illness", "dangerous": true}, {"name": "Pulmonary embolism", "dangerous": true}, {"name": "Lower respiratory infection", "dangerous": false}]},
+    {"id": "neurologic", "terms": ["face droop", "facial droop", "one sided weakness", "one-sided weakness", "speech difficulty", "slurred speech", "sudden weakness"], "problem": "acute focal neurologic symptom", "hypotheses": [{"name": "Acute stroke syndrome", "dangerous": true}, {"name": "Intracranial bleeding", "dangerous": true}, {"name": "Stroke mimic", "dangerous": false}]},
+    {"id": "abdominal", "terms": ["abdominal pain", "stomach pain", "belly pain"], "problem": "abdominal pain", "hypotheses": [{"name": "Acute surgical abdominal condition", "dangerous": true}, {"name": "Ectopic pregnancy", "dangerous": true}, {"name": "Gastrointestinal or urinary cause", "dangerous": false}]},
+    {"id": "headache", "terms": ["headache", "head pain"], "problem": "headache", "hypotheses": [{"name": "Primary headache syndrome", "dangerous": false}, {"name": "Intracranial hemorrhage or other secondary headache", "dangerous": true}]},
+    {"id": "respiratory", "terms": ["cough", "fever"], "problem": "respiratory or febrile illness", "hypotheses": [{"name": "Respiratory infection", "dangerous": false}, {"name": "Serious systemic infection", "dangerous": true}]},
+    {"id": "urinary", "terms": ["painful urination", "burning urination", "dysuria", "urinary frequency"], "problem": "urinary symptom", "hypotheses": [{"name": "Urinary tract infection", "dangerous": false}, {"name": "Upper urinary tract infection or obstruction", "dangerous": true}]}
+  ]
+}

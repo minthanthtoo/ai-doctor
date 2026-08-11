@@ -1,0 +1,64 @@
+{
+  "registry_version": "2026.08.11.2",
+  "capabilities": [
+    {
+      "name": "emergency_triage",
+      "status": "enabled",
+      "release_version": "triage-rules-0.1.0-preclinical",
+      "knowledge_sha256": "00ffbcbf8bc25da91c718bc2986b0dd4cb8c8b1f40df170b1329542a5247d3c3",
+      "age_required": false,
+      "allowed_roles": ["patient", "physician", "pharmacist", "nurse"],
+      "minimum_age_years": 0,
+      "maximum_age_years": 130,
+      "allowed_pregnancy_statuses": ["pregnant", "possibly_pregnant", "not_pregnant", "not_applicable", "unknown"],
+      "required_clinician_review": false,
+      "allowed_outputs": ["triage_assessment", "emergency_instruction"],
+      "allowed_actions": ["display_triage"],
+      "prohibited_outputs": ["diagnostic_assessment", "prescription_draft"],
+      "prohibited_actions": ["emergency_dispatch", "order_placement", "prescription_transmission"]
+    },
+    {
+      "name": "diagnosis_support",
+      "status": "enabled",
+      "release_version": "diagnosis-patterns-0.1.0-preclinical",
+      "knowledge_sha256": "ef7fd691dfa05c37abad3cc58b0c57fcfb6c07bc0dbb8778f0d66543d4b61133",
+      "allowed_roles": ["physician", "pharmacist", "nurse"],
+      "minimum_age_years": 18,
+      "maximum_age_years": 130,
+      "allowed_pregnancy_statuses": ["pregnant", "possibly_pregnant", "not_pregnant", "not_applicable", "unknown"],
+      "required_clinician_review": true,
+      "allowed_outputs": ["diagnostic_assessment"],
+      "allowed_actions": ["display_for_review"],
+      "prohibited_outputs": ["patient_diagnosis", "prescription_draft"],
+      "prohibited_actions": ["order_placement", "prescription_transmission", "autonomous_diagnosis"]
+    },
+    {
+      "name": "prescription_draft",
+      "status": "enabled",
+      "release_version": "prescribing-draft-1.0.0",
+      "allowed_roles": ["physician"],
+      "minimum_age_years": 18,
+      "maximum_age_years": 130,
+      "allowed_pregnancy_statuses": ["not_pregnant", "not_applicable"],
+      "required_clinician_review": true,
+      "allowed_outputs": ["prescription_draft"],
+      "allowed_actions": ["display_for_review"],
+      "prohibited_outputs": ["patient_prescription", "signed_prescription"],
+      "prohibited_actions": ["order_placement", "prescription_transmission", "pharmacy_fulfillment"]
+    },
+    {
+      "name": "patient_advice",
+      "status": "enabled",
+      "release_version": "patient-advice-1.0.0",
+      "allowed_roles": ["patient", "physician", "pharmacist", "nurse"],
+      "minimum_age_years": 18,
+      "maximum_age_years": 130,
+      "allowed_pregnancy_statuses": ["pregnant", "possibly_pregnant", "not_pregnant", "not_applicable", "unknown"],
+      "required_clinician_review": true,
+      "allowed_outputs": ["patient_advice"],
+      "allowed_actions": ["display_for_review"],
+      "prohibited_outputs": ["diagnostic_assessment", "prescription_draft"],
+      "prohibited_actions": ["order_placement", "prescription_transmission", "autonomous_treatment"]
+    }
+  ]
+}

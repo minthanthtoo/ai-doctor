@@ -1,0 +1,22 @@
+{
+  "release": "triage-rules-0.1.0-preclinical",
+  "coverage": "Preclinical screening only. Rules screen a limited set of symptom red flags and adult vital-sign thresholds; no validated pediatric vital-sign rule set is included. They do not exclude an emergency or replace local emergency services or clinical assessment.",
+  "emergency_instruction": "Potential emergency warning signs were identified. Contact local emergency services now or go to the nearest emergency department. Do not delay seeking in-person emergency care to use this system.",
+  "red_flag_symptoms": [
+    {"id": "chest_pain", "terms": ["chest pain", "chest pressure", "chest tightness"], "title": "Chest discomfort requires urgent assessment"},
+    {"id": "breathing", "terms": ["shortness of breath", "difficulty breathing", "trouble breathing", "cannot breathe", "breathless"], "title": "Breathing difficulty requires urgent assessment"},
+    {"id": "stroke", "terms": ["face droop", "facial droop", "one sided weakness", "one-sided weakness", "speech difficulty", "slurred speech", "sudden weakness"], "title": "Possible new neurologic deficit"},
+    {"id": "altered_mental_status", "terms": ["unconscious", "confusion", "confused", "seizure", "fainting", "passed out"], "title": "Altered consciousness or seizure"},
+    {"id": "bleeding", "terms": ["vomiting blood", "coughing blood", "blood in stool", "black stool", "heavy bleeding", "uncontrolled bleeding"], "title": "Possible significant bleeding"},
+    {"id": "anaphylaxis", "terms": ["swelling of tongue", "tongue swelling", "swelling of throat", "throat swelling", "anaphylaxis"], "title": "Possible severe allergic reaction"},
+    {"id": "self_harm", "terms": ["suicidal", "suicide", "self harm", "self-harm", "hurt myself"], "title": "Immediate mental-health safety concern"}
+  ],
+  "vital_thresholds": {
+    "oxygen_saturation_percent": {"less_than_or_equal": 90, "title": "Very low oxygen saturation"},
+    "systolic_bp_mmhg": {"less_than": 90, "title": "Low systolic blood pressure"},
+    "heart_rate_bpm": {"greater_than": 150, "title": "Markedly high heart rate"},
+    "respiratory_rate_bpm": {"greater_than": 30, "title": "Markedly high respiratory rate"},
+    "glucose_mg_dl": {"less_than": 54, "title": "Severely low blood glucose"},
+    "temperature_c": {"greater_than_or_equal": 40, "title": "Very high temperature"}
+  }
+}
