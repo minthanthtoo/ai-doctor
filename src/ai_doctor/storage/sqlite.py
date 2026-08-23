@@ -11,6 +11,7 @@ from typing import Any, Dict, Iterable, List, Tuple
 from uuid import UUID, uuid4
 
 from ai_doctor.domain.models import ClinicalDecision, PatientSnapshot
+from ai_doctor.storage.migrations import CDS_MIGRATIONS, apply_migrations
 
 
 def _utc_iso() -> str:
@@ -50,107 +51,8 @@ class SqliteRepository:
 
     def _initialize(self) -> None:
         with self._lock, self._connection() as connection:
-            connection.executescript(
-                """
-                PRAGMA journal_mode = WAL;
-
-                CREATE TABLE IF NOT EXISTS cases (
-                    case_id TEXT PRIMARY KEY,
-                    snapshot_json TEXT NOT NULL,
-                    decision_json TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL
-                );
-
-                CREATE TABLE IF NOT EXISTS case_versions (
-                    case_id TEXT NOT NULL,
-                    version_number INTEGER NOT NULL,
-                    snapshot_json TEXT NOT NULL,
-                    decision_json TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    PRIMARY KEY(case_id, version_number),
-                    FOREIGN KEY(case_id) REFERENCES cases(case_id)
-                );
-
-                CREATE TABLE IF NOT EXISTS case_acl (
-                    case_id TEXT NOT NULL,
-                    principal_id TEXT NOT NULL,
-                    access_level TEXT NOT NULL CHECK(access_level IN ('read', 'read_write')),
-                    granted_by TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    PRIMARY KEY(case_id, principal_id),
-                    FOREIGN KEY(case_id) REFERENCES cases(case_id)
-                );
-
-                CREATE TABLE IF NOT EXISTS audit_events (
-                    event_id TEXT PRIMARY KEY,
-                    case_id TEXT NOT NULL,
-                    sequence_number INTEGER NOT NULL,
-                    event_type TEXT NOT NULL,
-                    actor_id TEXT NOT NULL,
-                    actor_role TEXT NOT NULL,
-                    payload_json TEXT NOT NULL,
-                    payload_hash TEXT NOT NULL,
-                    previous_event_hash TEXT NOT NULL,
-                    event_hash TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    UNIQUE(case_id, sequence_number),
-                    FOREIGN KEY(case_id) REFERENCES cases(case_id)
-                );
-
-                CREATE TABLE IF NOT EXISTS audit_outbox (
-                    event_id TEXT PRIMARY KEY,
-                    case_id TEXT NOT NULL,
-                    event_json TEXT NOT NULL,
-                    delivered_at TEXT,
-                    created_at TEXT NOT NULL,
-                    FOREIGN KEY(event_id) REFERENCES audit_events(event_id)
-                );
-
-                CREATE TABLE IF NOT EXISTS audit_sink (
-                    event_id TEXT PRIMARY KEY,
-                    case_id TEXT NOT NULL,
-                    event_json TEXT NOT NULL,
-                    received_at TEXT NOT NULL
-                );
-
-                CREATE TRIGGER IF NOT EXISTS audit_events_no_update
-                BEFORE UPDATE ON audit_events
-                BEGIN
-                    SELECT RAISE(ABORT, 'audit events are append-only');
-                END;
-
-                CREATE TRIGGER IF NOT EXISTS audit_events_no_delete
-                BEFORE DELETE ON audit_events
-                BEGIN
-                    SELECT RAISE(ABORT, 'audit events are append-only');
-                END;
-
-                CREATE TRIGGER IF NOT EXISTS audit_sink_no_update
-                BEFORE UPDATE ON audit_sink
-                BEGIN
-                    SELECT RAISE(ABORT, 'audit sink is append-only');
-                END;
-
-                CREATE TRIGGER IF NOT EXISTS audit_sink_no_delete
-                BEFORE DELETE ON audit_sink
-                BEGIN
-                    SELECT RAISE(ABORT, 'audit sink is append-only');
-                END;
-
-                CREATE TRIGGER IF NOT EXISTS case_versions_no_update
-                BEFORE UPDATE ON case_versions
-                BEGIN
-                    SELECT RAISE(ABORT, 'case versions are append-only');
-                END;
-
-                CREATE TRIGGER IF NOT EXISTS case_versions_no_delete
-                BEFORE DELETE ON case_versions
-                BEGIN
-                    SELECT RAISE(ABORT, 'case versions are append-only');
-                END;
-                """
-            )
+            connection.execute("PRAGMA journal_mode = WAL")
+            apply_migrations(connection, CDS_MIGRATIONS, store_label="cds-store")
             connection.commit()
 
     def _append_event_tx(

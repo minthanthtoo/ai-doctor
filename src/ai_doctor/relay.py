@@ -30,6 +30,7 @@ from ai_doctor.domain.longitudinal import (
     SyncTombstone,
 )
 from ai_doctor.settings import Settings
+from ai_doctor.storage.migrations import RELAY_MIGRATIONS, apply_migrations
 
 GENERIC_PUSH_MESSAGE = "You have a health reminder."
 PROHIBITED_MODEL_LANGUAGE = {
@@ -130,71 +131,7 @@ class OpaqueRelayRepository:
 
     def _initialize(self) -> None:
         with self._connection() as connection:
-            connection.executescript(
-                """
-                CREATE TABLE IF NOT EXISTS relay_envelopes (
-                    opaque_object_id TEXT PRIMARY KEY,
-                    profile_pseudonym TEXT NOT NULL,
-                    device_id TEXT NOT NULL,
-                    client_sequence INTEGER NOT NULL,
-                    ciphertext TEXT NOT NULL,
-                    nonce TEXT NOT NULL,
-                    aad_hash TEXT NOT NULL,
-                    ciphertext_hash TEXT NOT NULL,
-                    signature TEXT NOT NULL,
-                    envelope_version TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    expires_at TEXT NOT NULL,
-                    server_received_at TEXT NOT NULL
-                );
-                CREATE UNIQUE INDEX IF NOT EXISTS relay_device_sequence
-                ON relay_envelopes(profile_pseudonym, device_id, client_sequence);
-
-                CREATE TABLE IF NOT EXISTS relay_profile_owners (
-                    principal_id TEXT PRIMARY KEY,
-                    profile_pseudonym TEXT NOT NULL UNIQUE,
-                    bound_at TEXT NOT NULL
-                );
-
-                CREATE TABLE IF NOT EXISTS relay_devices (
-                    device_id TEXT PRIMARY KEY,
-                    profile_pseudonym TEXT NOT NULL,
-                    signing_public_jwk TEXT NOT NULL,
-                    enrolled_at TEXT NOT NULL
-                );
-
-                CREATE TABLE IF NOT EXISTS relay_tombstones (
-                    tombstone_id TEXT PRIMARY KEY,
-                    profile_pseudonym TEXT NOT NULL,
-                    opaque_object_id TEXT NOT NULL,
-                    created_at TEXT NOT NULL
-                );
-
-                CREATE TABLE IF NOT EXISTS push_subscriptions (
-                    subscription_id TEXT PRIMARY KEY,
-                    profile_pseudonym TEXT NOT NULL,
-                    endpoint TEXT NOT NULL,
-                    p256dh TEXT NOT NULL,
-                    auth TEXT NOT NULL,
-                    created_at TEXT NOT NULL
-                );
-
-                CREATE TABLE IF NOT EXISTS push_schedules (
-                    opaque_schedule_id TEXT PRIMARY KEY,
-                    profile_pseudonym TEXT NOT NULL,
-                    subscription_id TEXT NOT NULL,
-                    due_at TEXT NOT NULL,
-                    repeat_after_seconds INTEGER,
-                    max_repeats INTEGER NOT NULL,
-                    repeats_sent INTEGER NOT NULL DEFAULT 0,
-                    expires_at TEXT NOT NULL,
-                    state TEXT NOT NULL DEFAULT 'scheduled',
-                    generic_message TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    FOREIGN KEY(subscription_id) REFERENCES push_subscriptions(subscription_id)
-                );
-                """
-            )
+            apply_migrations(connection, RELAY_MIGRATIONS, store_label="relay-store")
 
     def bind_or_verify_profile_owner(self, principal_id: str, profile_pseudonym: str) -> None:
         """Bind a patient credential to exactly one opaque profile.
