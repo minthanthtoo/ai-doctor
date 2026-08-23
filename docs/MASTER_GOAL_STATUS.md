@@ -1,7 +1,7 @@
 # AI Doctor OS v3 — Master goal status
 
-Last evidence review: 2026-08-12  
-Baseline: `1cb4619`  
+Last evidence review: 2026-08-23  
+Baseline: `588b754`  
 Overall state: **active; not clinically releasable**
 
 ## Release-gate ledger
