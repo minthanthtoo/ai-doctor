@@ -4,6 +4,8 @@ The repository now includes a working local-first personal longitudinal health s
 
 Start with [Personal Steward v3](docs/PERSONAL_STEWARD_V3.md) for the implemented architecture, local/home-server setup, and exact safety boundary. The older clinician-supervised capability path remains documented below for development compatibility.
 
+Long-horizon completion evidence is tracked in [Master goal status](docs/MASTER_GOAL_STATUS.md), with the requirement mapping in [Requirements traceability](docs/REQUIREMENTS_TRACEABILITY.md) and active security findings in [Threat model](docs/security/THREAT_MODEL.md).
+
 An executable, clinician-supervised implementation of four clinical capability families:
 
 - deterministic emergency red-flag triage;
