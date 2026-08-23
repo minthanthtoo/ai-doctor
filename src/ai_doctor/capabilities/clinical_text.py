@@ -5,10 +5,34 @@ from typing import Iterable, List
 
 from ai_doctor.domain.models import PatientSnapshot
 
+# Strict rule (original behavior): a negator immediately before the term.
 _NEGATION_PREFIX = re.compile(
-    r"(?:\bno|\bdenies|\bdenied|\bwithout|\bnot experiencing|\bnegative for)\s+$",
-    re.IGNORECASE,
+    r"(?:\bno|\bnever|\bnot|\bdenies|\bdenied|\bwithout|\bnot experiencing|\bnegative for)\s+$"
 )
+# Coordinate extension (NegEx-lite): a negator followed by up to two filler
+# words, covering lists such as "no weakness or slurred speech".
+_NEGATION_COORD = re.compile(
+    r"(?:\bno|\bnever|\bnot|\bdenies|\bdenied|\bwithout|\bnegative for)"
+    r"(\s+(?:[\w'-]+\s+){0,2})$"
+)
+# Contrast/temporal breakers: if they appear between negator and term, the
+# negator does not govern the term ("no relief until chest pain started").
+_COORD_BREAK = re.compile(
+    r"\b(?:but|however|except|until|after|before|when|while|since|then|because)\b",
+)
+
+
+def _is_negated_prefix(prefix: str) -> bool:
+    """Fail-closed negation scope check.
+
+    The strict rule short-circuits first, preserving historical behavior;
+    the coordinate extension only widens scope across short coordinated
+    phrases and refuses when any breaker word intervenes.
+    """
+    if _NEGATION_PREFIX.search(prefix):
+        return True
+    match = _NEGATION_COORD.search(prefix)
+    return bool(match) and not bool(_COORD_BREAK.search(match.group(1)))
 
 
 def clinical_texts(snapshot: PatientSnapshot) -> List[str]:
@@ -32,7 +56,7 @@ def contains_affirmed_term(text: str, terms: Iterable[str]) -> bool:
             prefix = text[max(0, match.start() - 40) : match.start()]
             # Use text after the latest strong punctuation as the local clause.
             local_prefix = re.split(r"[.;!?\n]", prefix)[-1]
-            if _NEGATION_PREFIX.search(local_prefix):
+            if _is_negated_prefix(local_prefix):
                 continue
             return True
     return False

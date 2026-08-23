@@ -99,3 +99,19 @@ def test_pediatric_case_without_red_flag_is_insufficient_not_routine():
 
     assert triage.urgency == UrgencyLevel.INSUFFICIENT_DATA
     assert "validated pediatric triage rule set" in triage.missing_inputs
+
+
+def test_never_negation_and_coordinated_negation_do_not_lock():
+    """NegEx-lite scope: 'never fainted' and 'no weakness or slurred speech'
+    are negated (CS-01 controls), while longer ambiguous spans stay affirmed."""
+    from ai_doctor.capabilities.clinical_text import contains_affirmed_term
+
+    terms = ["fainted", "slurred speech"]
+    assert not contains_affirmed_term("never fainted twice today", terms)
+    assert not contains_affirmed_term("no weakness or slurred speech", terms)
+    # Ambiguous long span still affirms — fail closed.
+    assert contains_affirmed_term(
+        "no relief until chest pain started an hour ago after lunch", ["chest pain"]
+    )
+    # Contrast breaker restores affirmation.
+    assert contains_affirmed_term("no fever but slurred speech appeared", ["slurred speech"])

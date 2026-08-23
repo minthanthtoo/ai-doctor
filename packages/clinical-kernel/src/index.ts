@@ -153,16 +153,30 @@ export interface KernelInput {
   pack: ClinicalPack;
 }
 
-const ENGLISH_NEGATION = /(?:\bno|\bdenies|\bdenied|\bwithout|\bnot experiencing|\bnegative for)\s+$/i;
+const ENGLISH_NEGATION = /(?:\bno|\bnever|\bnot|\bdenies|\bdenied|\bwithout|\bnot experiencing|\bnegative for)\s+$/i;
+const NEGATION_COORD = /(?:\bno|\bnever|\bnot|\bdenies|\bdenied|\bwithout|\bnegative for)(\s+(?:[\w'-]+\s+){0,2})$/i;
+const COORD_BREAK = /\b(?:but|however|except|until|after|before|when|while|since|then|because)\b/i;
+
+/**
+ * Fail-closed negation scope. The strict rule short-circuits first,
+ * preserving historical behavior; the coordinate extension only widens
+ * scope across short coordinated phrases ("no weakness or slurred speech")
+ * and refuses when a contrast or temporal breaker word intervenes.
+ */
+function isNegatedPrefix(prefix: string): boolean {
+  if (ENGLISH_NEGATION.test(prefix)) return true;
+  const match = NEGATION_COORD.exec(prefix);
+  return Boolean(match) && !COORD_BREAK.test(match![1]);
+}
 
 function containsAffirmedTerm(text: string, term: string): boolean {
   const normalized = text.toLocaleLowerCase();
   const needle = term.toLocaleLowerCase();
   let index = normalized.indexOf(needle);
   while (index >= 0) {
-    const prefix = normalized.slice(Math.max(0, index - 40), index).split(/[.;!?\n]/).pop() ?? "";
+    const prefix = normalized.slice(Math.max(0, index - 40), index);
     const suffix = normalized.slice(index + needle.length, index + needle.length + 12);
-    if (!ENGLISH_NEGATION.test(prefix) && !suffix.includes("မရှိ")) return true;
+    if (!isNegatedPrefix(prefix) && !suffix.includes("မရှိ")) return true;
     index = normalized.indexOf(needle, index + needle.length);
   }
   return false;
