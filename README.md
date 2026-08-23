@@ -10,6 +10,10 @@
 
 One-page boundary: [docs/BOUNDARY_ONE_PAGER.md](docs/BOUNDARY_ONE_PAGER.md) · Screenshots: [onboarding](docs/img/onboarding.png) · [recovery kit](docs/img/recovery-kit.png) · [concern intake](docs/img/concern-intake.png)
 
+## Custody
+
+Source is mirrored to two remotes — `github` (private github.com/minthanthtoo/ai-doctor) and `offsite` (bare mirror on an external volume). Push **both** after every change: `git push github main && git push offsite main`.
+
 The repository now includes a working local-first personal longitudinal health steward alongside the preserved clinician-supervised v0 reference API. The v3 PWA stores an encrypted append-only record on the phone, performs deterministic safety preflight, manages guided workups and user-owned reminders, and can sync only encrypted envelopes to a private home relay.
 
 Start with [Personal Steward v3](docs/PERSONAL_STEWARD_V3.md) for the implemented architecture, local/home-server setup, and exact safety boundary. The older clinician-supervised capability path remains documented below for development compatibility.
