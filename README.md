@@ -1,5 +1,15 @@
 # AI Doctor OS v3 — Preclinical Personal Health Steward
 
+![Safety status view](docs/img/safety-status.png)
+
+**Personal Health Steward** is a local-first, bilingual (မြန်မာ/English) personal health record PWA with deterministic safety screening. It is **preclinical**: not a licensed medical service, with no validated clinical claim.
+
+- **Does:** encrypted offline record · red-flag emergency lock (model-independent) · guided intake · possibility maps · encrypted sync to your own relay.
+- **Refuses:** diagnosis as fact, prescribing, orders, dispatch, autonomous advice — by construction, not policy.
+- **Proven:** 77 executable tests incl. a privacy-surface audit and signed-manifest drills. **Unproven:** clinical performance, comprehension studies, regulatory authorization — blocked pending external owners.
+
+One-page boundary: [docs/BOUNDARY_ONE_PAGER.md](docs/BOUNDARY_ONE_PAGER.md) · Screenshots: [onboarding](docs/img/onboarding.png) · [recovery kit](docs/img/recovery-kit.png) · [concern intake](docs/img/concern-intake.png)
+
 The repository now includes a working local-first personal longitudinal health steward alongside the preserved clinician-supervised v0 reference API. The v3 PWA stores an encrypted append-only record on the phone, performs deterministic safety preflight, manages guided workups and user-owned reminders, and can sync only encrypted envelopes to a private home relay.
 
 Start with [Personal Steward v3](docs/PERSONAL_STEWARD_V3.md) for the implemented architecture, local/home-server setup, and exact safety boundary. The older clinician-supervised capability path remains documented below for development compatibility.
