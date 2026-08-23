@@ -370,10 +370,29 @@ class EncryptedEnvelope(StrictModel):
     nonce: str = Field(min_length=12, max_length=200)
     aad_hash: str = Field(pattern="^[a-f0-9]{64}$")
     ciphertext_hash: str = Field(pattern="^[a-f0-9]{64}$")
+    device_signing_public_jwk: Dict[str, Any]
     signature: str = Field(min_length=16, max_length=500)
     created_at: datetime = Field(default_factory=utc_now)
     ttl_seconds: int = Field(default=31_536_000, ge=3600, le=315_360_000)
     envelope_version: str = "1"
+
+    @model_validator(mode="after")
+    def validate_device_public_key(self) -> "EncryptedEnvelope":
+        jwk = self.device_signing_public_jwk
+        if set(jwk) - {"kty", "crv", "x", "y", "ext", "key_ops"}:
+            raise ValueError("device signing JWK contains an unsupported field")
+        if jwk.get("kty") != "EC" or jwk.get("crv") != "P-256":
+            raise ValueError("device signing key must use EC P-256")
+        if not all(
+            isinstance(jwk.get(coordinate), str)
+            and len(jwk[coordinate]) == 43
+            and all(character.isalnum() or character in "-_" for character in jwk[coordinate])
+            for coordinate in ("x", "y")
+        ):
+            raise ValueError("device signing JWK requires x and y coordinates")
+        if jwk.get("ext") is not True or jwk.get("key_ops") != ["verify"]:
+            raise ValueError("device signing JWK must be a public verification key")
+        return self
 
 
 class SyncTombstone(StrictModel):

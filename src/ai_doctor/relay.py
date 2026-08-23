@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import sqlite3
@@ -9,6 +10,10 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping
 
 import httpx
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric.utils import encode_dss_signature
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 
 from ai_doctor.auth import Principal
@@ -41,6 +46,59 @@ def _utc_now() -> datetime:
 
 def _iso(value: datetime) -> str:
     return value.astimezone(timezone.utc).isoformat()
+
+
+def _rfc3339_millis(value: datetime) -> str:
+    return value.astimezone(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+
+
+def _base64url_decode(value: str) -> bytes:
+    return base64.urlsafe_b64decode(value + "=" * (-len(value) % 4))
+
+
+def _envelope_signing_payload(envelope: EncryptedEnvelope) -> bytes:
+    payload = {
+        "aad_hash": envelope.aad_hash,
+        "ciphertext": envelope.ciphertext,
+        "ciphertext_hash": envelope.ciphertext_hash,
+        "client_sequence": envelope.client_sequence,
+        "created_at": _rfc3339_millis(envelope.created_at),
+        "device_id": envelope.device_id,
+        "device_signing_public_jwk": envelope.device_signing_public_jwk,
+        "envelope_version": envelope.envelope_version,
+        "nonce": envelope.nonce,
+        "opaque_object_id": envelope.opaque_object_id,
+        "profile_pseudonym": envelope.profile_pseudonym,
+        "ttl_seconds": envelope.ttl_seconds,
+    }
+    return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def verify_envelope_signature(envelope: EncryptedEnvelope) -> None:
+    try:
+        actual_ciphertext_hash = hashlib.sha256(envelope.ciphertext.encode("utf-8")).hexdigest()
+        if actual_ciphertext_hash != envelope.ciphertext_hash:
+            raise ValueError("ciphertext hash does not match the envelope ciphertext")
+        jwk = envelope.device_signing_public_jwk
+        public_numbers = ec.EllipticCurvePublicNumbers(
+            int.from_bytes(_base64url_decode(jwk["x"]), "big"),
+            int.from_bytes(_base64url_decode(jwk["y"]), "big"),
+            ec.SECP256R1(),
+        )
+        signature = _base64url_decode(envelope.signature)
+        if len(signature) != 64:
+            raise ValueError("device signature must be a 64-byte P-256 signature")
+        der_signature = encode_dss_signature(
+            int.from_bytes(signature[:32], "big"),
+            int.from_bytes(signature[32:], "big"),
+        )
+        public_numbers.public_key().verify(
+            der_signature,
+            _envelope_signing_payload(envelope),
+            ec.ECDSA(hashes.SHA256()),
+        )
+    except (InvalidSignature, KeyError, TypeError, ValueError) as error:
+        raise ValueError("device envelope signature is invalid") from error
 
 
 class OpaqueRelayRepository:
@@ -88,6 +146,19 @@ class OpaqueRelayRepository:
                 CREATE UNIQUE INDEX IF NOT EXISTS relay_device_sequence
                 ON relay_envelopes(profile_pseudonym, device_id, client_sequence);
 
+                CREATE TABLE IF NOT EXISTS relay_profile_owners (
+                    principal_id TEXT PRIMARY KEY,
+                    profile_pseudonym TEXT NOT NULL UNIQUE,
+                    bound_at TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS relay_devices (
+                    device_id TEXT PRIMARY KEY,
+                    profile_pseudonym TEXT NOT NULL,
+                    signing_public_jwk TEXT NOT NULL,
+                    enrolled_at TEXT NOT NULL
+                );
+
                 CREATE TABLE IF NOT EXISTS relay_tombstones (
                     tombstone_id TEXT PRIMARY KEY,
                     profile_pseudonym TEXT NOT NULL,
@@ -121,10 +192,72 @@ class OpaqueRelayRepository:
                 """
             )
 
+    def bind_or_verify_profile_owner(self, principal_id: str, profile_pseudonym: str) -> None:
+        """Bind a patient credential to exactly one opaque profile.
+
+        First use is an enrollment ceremony. After enrollment, neither the same
+        credential nor another credential can silently switch or claim that profile.
+        """
+
+        now = _iso(_utc_now())
+        with self._connection() as connection:
+            existing_principal = connection.execute(
+                "SELECT profile_pseudonym FROM relay_profile_owners WHERE principal_id = ?",
+                (principal_id,),
+            ).fetchone()
+            if existing_principal is not None:
+                if existing_principal["profile_pseudonym"] != profile_pseudonym:
+                    raise PermissionError("credential is bound to a different profile")
+                return
+            try:
+                connection.execute(
+                    """
+                    INSERT INTO relay_profile_owners (principal_id, profile_pseudonym, bound_at)
+                    VALUES (?, ?, ?)
+                    """,
+                    (principal_id, profile_pseudonym, now),
+                )
+            except sqlite3.IntegrityError as error:
+                raise PermissionError("profile belongs to a different credential") from error
+
+    def profile_for_principal(self, principal_id: str) -> str | None:
+        with self._connection() as connection:
+            row = connection.execute(
+                "SELECT profile_pseudonym FROM relay_profile_owners WHERE principal_id = ?",
+                (principal_id,),
+            ).fetchone()
+        return row["profile_pseudonym"] if row is not None else None
+
     def put_envelope(self, envelope: EncryptedEnvelope) -> Dict[str, Any]:
         expires_at = envelope.created_at + timedelta(seconds=envelope.ttl_seconds)
         now = _utc_now()
         with self._connection() as connection:
+            public_jwk = json.dumps(
+                envelope.device_signing_public_jwk,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            enrolled_device = connection.execute(
+                """
+                SELECT profile_pseudonym, signing_public_jwk
+                FROM relay_devices WHERE device_id = ?
+                """,
+                (envelope.device_id,),
+            ).fetchone()
+            if enrolled_device is None:
+                connection.execute(
+                    """
+                    INSERT INTO relay_devices (
+                        device_id, profile_pseudonym, signing_public_jwk, enrolled_at
+                    ) VALUES (?, ?, ?, ?)
+                    """,
+                    (envelope.device_id, envelope.profile_pseudonym, public_jwk, _iso(now)),
+                )
+            elif (
+                enrolled_device["profile_pseudonym"] != envelope.profile_pseudonym
+                or enrolled_device["signing_public_jwk"] != public_jwk
+            ):
+                raise ValueError("device identity does not match its enrollment")
             existing = connection.execute(
                 "SELECT ciphertext_hash, rowid FROM relay_envelopes WHERE opaque_object_id = ?",
                 (envelope.opaque_object_id,),
@@ -265,10 +398,14 @@ class OpaqueRelayRepository:
                 ),
             )
 
-    def delete_schedule(self, schedule_id: str) -> bool:
+    def delete_schedule(self, schedule_id: str, profile_pseudonym: str) -> bool:
         with self._connection() as connection:
             cursor = connection.execute(
-                "DELETE FROM push_schedules WHERE opaque_schedule_id = ?", (schedule_id,)
+                """
+                DELETE FROM push_schedules
+                WHERE opaque_schedule_id = ? AND profile_pseudonym = ?
+                """,
+                (schedule_id, profile_pseudonym),
             )
             return cursor.rowcount > 0
 
@@ -326,11 +463,18 @@ class OpaqueRelayRepository:
                     (repeats_sent, "push_accepted" if accepted else "delivery_unknown", schedule_id),
                 )
 
-    def summary(self) -> Dict[str, int]:
+    def summary(self, profile_pseudonym: str) -> Dict[str, int]:
         with self._connection() as connection:
-            envelopes = connection.execute("SELECT COUNT(*) FROM relay_envelopes").fetchone()[0]
+            envelopes = connection.execute(
+                "SELECT COUNT(*) FROM relay_envelopes WHERE profile_pseudonym = ?",
+                (profile_pseudonym,),
+            ).fetchone()[0]
             schedules = connection.execute(
-                "SELECT COUNT(*) FROM push_schedules WHERE state = 'scheduled'"
+                """
+                SELECT COUNT(*) FROM push_schedules
+                WHERE profile_pseudonym = ? AND state = 'scheduled'
+                """,
+                (profile_pseudonym,),
             ).fetchone()[0]
         return {"encrypted_envelopes": envelopes, "scheduled_generic_pushes": schedules}
 
@@ -466,8 +610,24 @@ def mount_longitudinal_routes(
     app.state.model_broker = broker
 
     def require_patient(principal: Principal) -> None:
-        if principal.role.value not in {"patient", "clinical_safety_officer"}:
+        if principal.role.value != "patient":
             raise HTTPException(status_code=403, detail="personal steward endpoints are patient-owned")
+
+    def require_patient_or_safety(principal: Principal) -> None:
+        if principal.role.value not in {"patient", "clinical_safety_officer"}:
+            raise HTTPException(status_code=403, detail="personal steward access is not permitted")
+
+    def bind_or_verify_owned_profile(principal: Principal, profile_pseudonym: str) -> None:
+        require_patient(principal)
+        try:
+            relay.bind_or_verify_profile_owner(principal.user_id, profile_pseudonym)
+        except PermissionError as error:
+            raise HTTPException(status_code=403, detail=str(error)) from error
+
+    def require_enrolled_profile(principal: Principal, profile_pseudonym: str) -> None:
+        require_patient(principal)
+        if relay.profile_for_principal(principal.user_id) != profile_pseudonym:
+            raise HTTPException(status_code=403, detail="credential does not own this profile")
 
     @app.put("/v1/sync/envelopes/{opaque_id}")
     def put_envelope(
@@ -475,10 +635,11 @@ def mount_longitudinal_routes(
         envelope: EncryptedEnvelope,
         principal: Principal = Depends(authenticate),
     ) -> Dict[str, Any]:
-        require_patient(principal)
         if opaque_id != envelope.opaque_object_id:
             raise HTTPException(status_code=422, detail="path and envelope object IDs differ")
         try:
+            verify_envelope_signature(envelope)
+            bind_or_verify_owned_profile(principal, envelope.profile_pseudonym)
             return relay.put_envelope(envelope)
         except ValueError as error:
             raise HTTPException(status_code=409, detail=str(error)) from error
@@ -489,7 +650,7 @@ def mount_longitudinal_routes(
         cursor: int = 0,
         principal: Principal = Depends(authenticate),
     ) -> Dict[str, Any]:
-        require_patient(principal)
+        require_enrolled_profile(principal, profile_pseudonym)
         if len(profile_pseudonym) < 16 or cursor < 0:
             raise HTTPException(status_code=422, detail="invalid sync cursor or profile")
         return relay.list_envelopes(profile_pseudonym, cursor)
@@ -499,7 +660,7 @@ def mount_longitudinal_routes(
         tombstone: SyncTombstone,
         principal: Principal = Depends(authenticate),
     ) -> Response:
-        require_patient(principal)
+        require_enrolled_profile(principal, tombstone.profile_pseudonym)
         relay.add_tombstone(tombstone)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -508,7 +669,7 @@ def mount_longitudinal_routes(
         subscription: PushSubscription,
         principal: Principal = Depends(authenticate),
     ) -> Dict[str, Any]:
-        require_patient(principal)
+        require_enrolled_profile(principal, subscription.profile_pseudonym)
         if not subscription.endpoint.startswith("https://"):
             raise HTTPException(status_code=422, detail="push endpoint must use HTTPS")
         relay.put_subscription(subscription)
@@ -523,7 +684,7 @@ def mount_longitudinal_routes(
         schedule: PushSchedule,
         principal: Principal = Depends(authenticate),
     ) -> Dict[str, Any]:
-        require_patient(principal)
+        require_enrolled_profile(principal, schedule.profile_pseudonym)
         if schedule_id != schedule.opaque_schedule_id:
             raise HTTPException(status_code=422, detail="path and schedule IDs differ")
         try:
@@ -538,7 +699,10 @@ def mount_longitudinal_routes(
         principal: Principal = Depends(authenticate),
     ) -> Response:
         require_patient(principal)
-        if not relay.delete_schedule(schedule_id):
+        profile_pseudonym = relay.profile_for_principal(principal.user_id)
+        if profile_pseudonym is None or not relay.delete_schedule(
+            schedule_id, profile_pseudonym
+        ):
             raise HTTPException(status_code=404, detail="schedule not found")
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -547,7 +711,7 @@ def mount_longitudinal_routes(
         channel: str,
         principal: Principal = Depends(authenticate),
     ) -> Dict[str, Any]:
-        require_patient(principal)
+        require_patient_or_safety(principal)
         if channel not in {"preclinical", "stable"}:
             raise HTTPException(status_code=404, detail="release channel not found")
         manifest = json.loads(release_manifest_path.read_text(encoding="utf-8"))
@@ -560,7 +724,7 @@ def mount_longitudinal_routes(
         digest: str,
         principal: Principal = Depends(authenticate),
     ) -> Dict[str, Any]:
-        require_patient(principal)
+        require_patient_or_safety(principal)
         manifest = json.loads(release_manifest_path.read_text(encoding="utf-8"))
         artifact = manifest.get("artifacts", {}).get(digest)
         if artifact is None:
@@ -583,8 +747,13 @@ def mount_longitudinal_routes(
     def operations_health(
         principal: Principal = Depends(authenticate),
     ) -> Dict[str, Any]:
-        require_patient(principal)
-        return {
+        require_patient_or_safety(principal)
+        profile_pseudonym = (
+            relay.profile_for_principal(principal.user_id)
+            if principal.role.value == "patient"
+            else None
+        )
+        response = {
             "status": "ok",
             "clinical_monitoring": False,
             "push_delivery_guaranteed": False,
@@ -593,5 +762,7 @@ def mount_longitudinal_routes(
             else None,
             "model_gateway_enabled": settings.model_gateway_enabled,
             "server_time": _iso(_utc_now()),
-            **relay.summary(),
         }
+        if profile_pseudonym is not None:
+            response.update(relay.summary(profile_pseudonym))
+        return response

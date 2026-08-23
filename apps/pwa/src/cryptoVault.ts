@@ -311,6 +311,7 @@ export async function makeSyncEnvelope(vault: UnlockedVault, event: EncryptedEve
     nonce: event.nonce,
     aad_hash: aadHash,
     ciphertext_hash: ciphertextHash,
+    device_signing_public_jwk: vault.record.signingPublicJwk,
     created_at: event.occurredAt,
     ttl_seconds: 31_536_000,
     envelope_version: "1"
@@ -318,9 +319,20 @@ export async function makeSyncEnvelope(vault: UnlockedVault, event: EncryptedEve
   const signature = await crypto.subtle.sign(
     { name: "ECDSA", hash: "SHA-256" },
     vault.record.signingPrivateKey,
-    bufferSource(encoder.encode(JSON.stringify(unsigned)))
+    bufferSource(encoder.encode(canonicalJson(unsigned)))
   );
   return { ...unsigned, signature: bytesToBase64Url(new Uint8Array(signature)) };
+}
+
+export function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  if (value !== null && typeof value === "object") {
+    return `{${Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, item]) => `${JSON.stringify(key)}:${canonicalJson(item)}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value);
 }
 
 export async function markEventSynced(eventId: string): Promise<void> {
