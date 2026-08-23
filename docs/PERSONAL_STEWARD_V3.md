@@ -73,6 +73,17 @@ The reference relay currently uses SQLite to preserve compatibility with the pre
 
 The backup worker uses SQLite's online backup API, not a raw copy of a live database. Backup files still contain relay ciphertext and sensitive metadata, so the backup volume itself must be encrypted and access-controlled.
 
+## Release signing
+
+The v3 release manifest supports a detached Ed25519 approval signature in its top-level `signature` field. Signing covers canonical manifest bytes (sorted keys, compact separators) with `signature` set to `null` — the same recipe as the relay's `manifest_digest`, so digests and signatures stay consistent.
+
+1. Generate a base64 Ed25519 keypair using the snippet at the top of `scripts/sign_release_manifest.py`; keep the private half in an approved secret store.
+2. Sign: `/Users/min/miniforge3/bin/python scripts/sign_release_manifest.py --input src/ai_doctor/config/release_manifest_v3.json --output /secure/path/release_manifest_v3.signed.json --private-key-b64 <KEY> --key-id release-key-1 --signer-id <approver>`
+3. Publish only the public half into a trusted-key map JSON (`{"release-key-1": "<base64 public>"}`) and point the relay at it via `AI_DOCTOR_RELEASE_MANIFEST_PUBLIC_KEYS_JSON`.
+4. Enforce with `AI_DOCTOR_REQUIRE_SIGNED_MANIFEST=true`. Rotation = publish a new key map without the old key (revoking everything it signed), then re-sign.
+
+Startup fails closed: an invalid signature always refuses boot; required artifacts are re-hashed against their pinned digests before the app accepts traffic.
+
 ## Generic Web Push
 
 Generate a VAPID key pair using an approved operator tool, then configure:

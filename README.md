@@ -143,6 +143,9 @@ The renderer copies those bounded fields verbatim after recording the reviewer; 
 | `AI_DOCTOR_MODEL_GATEWAY_API_KEY` | Optional gateway bearer secret |
 | `AI_DOCTOR_MODEL_GATEWAY_TIMEOUT_SECONDS` | Bounded to 1–60 seconds |
 | `AI_DOCTOR_MODEL_GATEWAY_RELEASE` | Immutable local release label recorded on augmented output |
+| `AI_DOCTOR_RELEASE_MANIFEST_PATH` | Optional override for the served release manifest location |
+| `AI_DOCTOR_RELEASE_MANIFEST_PUBLIC_KEYS_JSON` | Map of Ed25519 key IDs to base64 public keys trusted for manifest signatures |
+| `AI_DOCTOR_REQUIRE_SIGNED_MANIFEST` | `true` refuses startup unless the release manifest carries a valid approved signature |
 | `AI_DOCTOR_MODEL_GATEWAY_ALLOWED_HOSTS` | Comma-separated egress allowlist; required outside preclinical mode |
 
 The gateway omits direct patient and encounter references, arbitrary symptom attributes, and source metadata. The remaining clinical facts may still contain sensitive health information. Enable it only for an organization-approved endpoint with the necessary privacy, security, consent, contracting, and data-residency controls.
