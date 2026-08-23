@@ -17,6 +17,10 @@ from cryptography.hazmat.primitives.asymmetric.utils import encode_dss_signature
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 
 from ai_doctor.auth import Principal
+from ai_doctor.config.verify_release_manifest import (
+    load_public_keys,
+    verify_manifest_signature,
+)
 from ai_doctor.domain.longitudinal import (
     CandidateContribution,
     EncryptedEnvelope,
@@ -597,6 +601,51 @@ def _manifest_digest(manifest: Dict[str, Any]) -> str:
     return hashlib.sha256(canonical).hexdigest()
 
 
+def _verify_release_integrity_at_startup(
+    *, settings: Settings, release_manifest_path: Path
+) -> None:
+    """Fail closed on untrusted release content before the app accepts traffic.
+
+    - Any manifest signature present-but-invalid refuses startup.
+    - ``AI_DOCTOR_REQUIRE_SIGNED_MANIFEST=true`` additionally requires a valid
+      signature from a configured trusted key (revocation = remove the key).
+    - Required artifacts are re-hashed against their pinned digest so a stale
+      or corrupted pack cannot boot even when the manifest itself verifies.
+    """
+    try:
+        manifest = json.loads(release_manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise RuntimeError(f"release manifest is unreadable: {error}") from error
+    if not isinstance(manifest, dict):
+        raise RuntimeError("release manifest must contain one JSON object")
+
+    trusted_keys = load_public_keys(settings.release_manifest_public_keys)
+    signature_block = manifest.get("signature")
+    if isinstance(signature_block, dict):
+        # A signed manifest must always verify; an invalid one never boots.
+        try:
+            verify_manifest_signature(manifest, trusted_keys)
+        except ValueError as error:
+            raise RuntimeError(f"release manifest signature rejected: {error}") from error
+    elif settings.require_signed_manifest:
+        raise RuntimeError(
+            "AI_DOCTOR_REQUIRE_SIGNED_MANIFEST is enabled but the release manifest carries no approved signature"
+        )
+
+    for digest, artifact in manifest.get("artifacts", {}).items():
+        if not artifact.get("required"):
+            continue
+        artifact_path = release_manifest_path.parent.parent / artifact["path"]
+        try:
+            raw = artifact_path.read_bytes()
+        except OSError as error:
+            raise RuntimeError(f"required release artifact unreadable: {error}") from error
+        if hashlib.sha256(raw).hexdigest() != digest:
+            raise RuntimeError(
+                "required release artifact failed integrity verification at startup"
+            )
+
+
 def mount_longitudinal_routes(
     app: FastAPI,
     *,
@@ -608,6 +657,7 @@ def mount_longitudinal_routes(
     broker = PrivacyMinimizedModelBroker(settings)
     app.state.opaque_relay = relay
     app.state.model_broker = broker
+    _verify_release_integrity_at_startup(settings=settings, release_manifest_path=release_manifest_path)
 
     def require_patient(principal: Principal) -> None:
         if principal.role.value != "patient":

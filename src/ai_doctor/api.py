@@ -281,7 +281,8 @@ def create_app(
         authenticate=authenticate,
         settings=settings,
         release_manifest_path=(
-            Path(__file__).resolve().parent / "config" / "release_manifest_v3.json"
+            settings.release_manifest_path
+            or Path(__file__).resolve().parent / "config" / "release_manifest_v3.json"
         ),
     )
 

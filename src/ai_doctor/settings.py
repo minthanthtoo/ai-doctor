@@ -17,6 +17,9 @@ class Settings:
     protocol_path: Optional[Path] = None
     protocol_public_keys: Dict[str, str] = field(default_factory=dict)
     allow_test_protocols: bool = False
+    release_manifest_path: Optional[Path] = None
+    release_manifest_public_keys: Dict[str, str] = field(default_factory=dict)
+    require_signed_manifest: bool = False
     model_gateway_enabled: bool = False
     model_gateway_endpoint: Optional[str] = None
     model_gateway_model: Optional[str] = None
@@ -95,6 +98,19 @@ class Settings:
         if environment != "preclinical" and allow_test_protocols:
             raise RuntimeError("test protocols are prohibited outside preclinical mode")
 
+        release_manifest_path_text = os.getenv("AI_DOCTOR_RELEASE_MANIFEST_PATH")
+        release_manifest_path = (
+            Path(release_manifest_path_text).expanduser() if release_manifest_path_text else None
+        )
+        release_manifest_public_keys = json.loads(
+            os.getenv("AI_DOCTOR_RELEASE_MANIFEST_PUBLIC_KEYS_JSON", "{}")
+        )
+        require_signed_manifest = os.getenv("AI_DOCTOR_REQUIRE_SIGNED_MANIFEST", "false").lower() in {
+            "1",
+            "true",
+            "yes",
+        }
+
         model_gateway_enabled = os.getenv("AI_DOCTOR_MODEL_GATEWAY_ENABLED", "false").lower() in {
             "1",
             "true",
@@ -116,6 +132,9 @@ class Settings:
             protocol_path=protocol_path,
             protocol_public_keys=protocol_public_keys,
             allow_test_protocols=allow_test_protocols,
+            release_manifest_path=release_manifest_path,
+            release_manifest_public_keys=release_manifest_public_keys,
+            require_signed_manifest=require_signed_manifest,
             model_gateway_enabled=model_gateway_enabled,
             model_gateway_endpoint=model_gateway_endpoint,
             model_gateway_model=model_gateway_model,
