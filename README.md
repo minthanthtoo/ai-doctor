@@ -54,6 +54,9 @@ See [Prescribing protocol releases](docs/PRESCRIBING_PROTOCOLS.md) for the Ed255
 
 Python 3.9+ is supported.
 
+> Verified runner on this machine: `/Users/min/miniforge3/bin/python -m pytest -q`
+> (the checked-in `.venv/` is an empty shell; recreate with `uv venv && uv sync --extra test`).
+
 ```bash
 uv sync --extra test
 uv run uvicorn ai_doctor.main:app --host 127.0.0.1 --port 8080
