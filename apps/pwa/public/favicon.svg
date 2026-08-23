@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Vector twin of scripts/make_icons.py geometry: shield + ECG on cream. -->
+  <rect width="512" height="512" fill="#f4f1e8"/>
+  <path d="M92 51 L420 51 L420 230 L256 470 L92 230 Z" fill="#0d4740"/>
+  <path d="M123 84 L389 84 L389 216 L256 407 L123 216 Z" fill="#f4f1e8"/>
+  <polyline points="123,246 184,246 210,189 241,307 266,159 292,276 312,246 389,246"
+            fill="none" stroke="#0d4740" stroke-width="18"
+            stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
