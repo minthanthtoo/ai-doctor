@@ -1,7 +1,7 @@
 # AI Doctor OS v3 — Master goal status
 
-Last evidence review: 2026-08-25 (R3)  
-Baseline: `c6e5d37`  
+Last evidence review: 2026-08-25 (R4)  
+Baseline: `0e8daa9`  
 Overall state: **active; not clinically releasable**
 
 ## Release-gate ledger
@@ -15,7 +15,7 @@ Overall state: **active; not clinically releasable**
 | Evidence and localization | Fail | Hash-pinned preclinical cardiometabolic pack with bilingual fields; Ed25519 manifest signing + fail-closed startup verification drills (`tests/test_release_signing.py`) | No named clinical or Burmese-language approval; evidence corpus is incomplete | Create provenance register and independent review package |
 | Privacy and security | Fail | Local encryption, ciphertext-only relay schema, generic push text, device-signature verification, profile isolation and append-only record tests, automated sentinel privacy-surface audit (`tests/test_privacy_surface.py`), device roster with revocation (T-10), push-contract drills (T-09); structured access logs are JSON with whitelisted fields only and query strings excluded (`tests/test_observability.py`) | No independent penetration test, browser/device cryptographic review or full deployed log-capture audit; device-scoped read auth still credential-based | Complete threat-model controls; independent security assessment remains external |
 | Clinical evaluation | Blocked | Thresholds and intended evaluation design are documented | No independently adjudicated Myanmar-relevant corpus or external holdout | Prepare corpus schema, adjudication protocol and reviewer package without real PHI |
-| Human factors | Blocked | Bilingual interface exists | No representative comprehension/accessibility study | Prepare protocol and instruments; execution requires approved participants/review |
+| Human factors | Blocked | Bilingual interface exists; keyed my/en copy module with build-breaking parity tests (`apps/pwa/src/copy.ts`, `copy.test.ts`); axe-core sweep of the built PWA reports zero violations (`tests/test_a11y_axe.py`) | No representative comprehension/accessibility study; manual screen-reader pass not yet witnessed | Prepare protocol and instruments; execution requires approved participants/review |
 | Operations | Fail | Compose, health endpoint, transactional SQLite backup, generic push worker; automated restore-fidelity, migration-replay and corruption-refusal drills (`tests/test_backup_drills.py`); request metrics endpoint (`/v1/operations/metrics`); profile data exit — full export and confirmed hard delete (`tests/test_data_exit.py`) | No live private-host restore, outage, rollback or incident drill evidence | Add operator runbooks and witnessed drill |
 | Governance and authorization | Blocked | Product boundary and promotion gates are documented | No named Myanmar clinical owner, language approver, legal determination or release signatures | Produce explicit external-review requests and signature artifacts |
 
