@@ -27,6 +27,7 @@ from ai_doctor.models.gateway import (
     DiagnosisModelGateway,
     OpenAICompatibleTransport,
 )
+from ai_doctor.observability import install_observability
 from ai_doctor.orchestrator import ClinicalOrchestrator, ClinicalWorkflowError
 from ai_doctor.relay import mount_longitudinal_routes
 from ai_doctor.settings import Settings
@@ -286,4 +287,5 @@ def create_app(
         ),
     )
 
+    install_observability(app, settings)
     return app
