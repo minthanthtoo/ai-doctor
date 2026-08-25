@@ -20,7 +20,9 @@ dependencies = [
 [project.optional-dependencies]
 test = [
   "pytest>=8,<9",
-  "hypothesis>=6,<7"
+  "hypothesis>=6,<7",
+  "ruff>=0.13",
+  "playwright>=1.40"
 ]
 
 [project.scripts]
