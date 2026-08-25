@@ -216,6 +216,11 @@ def _relay_store_v1(connection: sqlite3.Connection) -> None:
         connection.execute(statement)
 
 
+def _relay_store_v2_device_lifecycle(connection: sqlite3.Connection) -> None:
+    """T-10: device roster gains revocation state."""
+    connection.execute("ALTER TABLE relay_devices ADD COLUMN revoked_at TEXT")
+
+
 # (version, label, function) — append only; never edit a shipped migration.
 CDS_MIGRATIONS: Sequence[tuple[int, str, MigrationFn]] = (
     (1, "clinician-supervised store baseline", _cds_store_v1),
@@ -223,6 +228,7 @@ CDS_MIGRATIONS: Sequence[tuple[int, str, MigrationFn]] = (
 
 RELAY_MIGRATIONS: Sequence[tuple[int, str, MigrationFn]] = (
     (1, "opaque relay store baseline", _relay_store_v1),
+    (2, "device revocation (T-10)", _relay_store_v2_device_lifecycle),
 )
 
 

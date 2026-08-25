@@ -169,6 +169,45 @@ class OpaqueRelayRepository:
             ).fetchone()
         return row["profile_pseudonym"] if row is not None else None
 
+    def device_roster(self, profile_pseudonym: str) -> list[Dict[str, str]]:
+        with self._connection() as connection:
+            rows = connection.execute(
+                """
+                SELECT device_id, enrolled_at, revoked_at
+                FROM relay_devices WHERE profile_pseudonym = ?
+                ORDER BY enrolled_at ASC
+                """,
+                (profile_pseudonym,),
+            ).fetchall()
+        return [
+            {
+                "device_id": row["device_id"],
+                "enrolled_at": row["enrolled_at"],
+                "status": "revoked" if row["revoked_at"] else "active",
+            }
+            for row in rows
+        ]
+
+    def revoke_device(self, profile_pseudonym: str, device_id: str) -> bool:
+        with self._connection() as connection:
+            cursor = connection.execute(
+                """
+                UPDATE relay_devices SET revoked_at = ?
+                WHERE device_id = ? AND profile_pseudonym = ? AND revoked_at IS NULL
+                """,
+                (_iso(_utc_now()), device_id, profile_pseudonym),
+            )
+        return cursor.rowcount > 0
+
+    def device_is_active(self, device_id: str) -> bool:
+        """Unknown devices may enroll (first write); only revoked ones are blocked."""
+        with self._connection() as connection:
+            row = connection.execute(
+                "SELECT revoked_at FROM relay_devices WHERE device_id = ?",
+                (device_id,),
+            ).fetchone()
+        return row is None or row["revoked_at"] is None
+
     def put_envelope(self, envelope: EncryptedEnvelope) -> Dict[str, Any]:
         expires_at = envelope.created_at + timedelta(seconds=envelope.ttl_seconds)
         now = _utc_now()
@@ -627,9 +666,29 @@ def mount_longitudinal_routes(
         try:
             verify_envelope_signature(envelope)
             bind_or_verify_owned_profile(principal, envelope.profile_pseudonym)
+            if not relay.device_is_active(envelope.device_id):
+                raise PermissionError("device has been revoked from this profile")
             return relay.put_envelope(envelope)
         except ValueError as error:
             raise HTTPException(status_code=409, detail=str(error)) from error
+        except PermissionError as error:
+            raise HTTPException(status_code=403, detail=str(error)) from error
+
+    @app.get("/v1/devices")
+    def list_devices(principal: Principal = Depends(authenticate)) -> Dict[str, Any]:
+        require_patient(principal)
+        profile_pseudonym = relay.profile_for_principal(principal.user_id)
+        if profile_pseudonym is None:
+            raise HTTPException(status_code=404, detail="no profile bound to this credential")
+        return {"devices": relay.device_roster(profile_pseudonym)}
+
+    @app.delete("/v1/devices/{device_id}", status_code=status.HTTP_204_NO_CONTENT)
+    def revoke_device(device_id: str, principal: Principal = Depends(authenticate)) -> Response:
+        require_patient(principal)
+        profile_pseudonym = relay.profile_for_principal(principal.user_id)
+        if profile_pseudonym is None or not relay.revoke_device(profile_pseudonym, device_id):
+            raise HTTPException(status_code=404, detail="device not found on this profile")
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @app.get("/v1/sync/envelopes")
     def get_envelopes(

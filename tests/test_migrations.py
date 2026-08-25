@@ -45,7 +45,7 @@ def test_fresh_cds_database_reaches_latest(tmp_path: Path):
 def test_fresh_relay_database_reaches_latest(tmp_path: Path):
     connection = _connect(tmp_path / "relay.db")
     applied = apply_migrations(connection, RELAY_MIGRATIONS, store_label="relay-test")
-    assert applied == 1
+    assert applied == len(RELAY_MIGRATIONS)
     tables = {
         row["name"]
         for row in connection.execute(
@@ -58,12 +58,12 @@ def test_fresh_relay_database_reaches_latest(tmp_path: Path):
 def test_reapply_is_idempotent(tmp_path: Path):
     path = tmp_path / "store.db"
     first = _connect(path)
-    assert apply_migrations(first, RELAY_MIGRATIONS, store_label="relay-test") == 1
+    assert apply_migrations(first, RELAY_MIGRATIONS, store_label="relay-test") == len(RELAY_MIGRATIONS)
     first.close()
     second = _connect(path)
     assert apply_migrations(second, RELAY_MIGRATIONS, store_label="relay-test") == 0
     rows = second.execute("SELECT COUNT(*) AS n FROM schema_migrations").fetchone()
-    assert rows["n"] == 1
+    assert rows["n"] == len(RELAY_MIGRATIONS)
 
 
 def test_legacy_database_without_migration_table_stamps_forward_intact(tmp_path: Path):
@@ -87,27 +87,27 @@ def test_legacy_database_without_migration_table_stamps_forward_intact(tmp_path:
 
     connection = _connect(path)
     applied = apply_migrations(connection, RELAY_MIGRATIONS, store_label="relay-test")
-    assert applied == 1
+    assert applied == len(RELAY_MIGRATIONS)
     # Pre-existing data survives; IF NOT EXISTS statements were no-ops.
     count = connection.execute("SELECT COUNT(*) AS n FROM relay_envelopes").fetchone()
     assert count["n"] == 1
     version = connection.execute(
         "SELECT MAX(version) AS v FROM schema_migrations"
     ).fetchone()["v"]
-    assert version == 1
+    assert version == max(v for v, _, _ in RELAY_MIGRATIONS)
 
 
 def test_two_stores_share_one_database_file_independently(tmp_path: Path):
     """CDS and relay stores live in one file; each tracks its own versions."""
     path = tmp_path / "shared.db"
     connection = _connect(path)
-    assert apply_migrations(connection, CDS_MIGRATIONS, store_label="cds-store") == 1
-    assert apply_migrations(connection, RELAY_MIGRATIONS, store_label="relay-store") == 1
+    assert apply_migrations(connection, CDS_MIGRATIONS, store_label="cds-store") == len(CDS_MIGRATIONS)
+    assert apply_migrations(connection, RELAY_MIGRATIONS, store_label="relay-store") == len(RELAY_MIGRATIONS)
     rows = connection.execute(
         "SELECT store, COUNT(*) AS n FROM schema_migrations GROUP BY store"
     ).fetchall()
     tracked = {row["store"]: row["n"] for row in rows}
-    assert tracked == {"cds-store": 1, "relay-store": 1}
+    assert tracked == {"cds-store": len(CDS_MIGRATIONS), "relay-store": len(RELAY_MIGRATIONS)}
     # Re-opening both is fully idempotent.
     assert apply_migrations(connection, CDS_MIGRATIONS, store_label="cds-store") == 0
     assert apply_migrations(connection, RELAY_MIGRATIONS, store_label="relay-store") == 0
