@@ -20,7 +20,9 @@ jobs:
       - name: Ruff
         run: ruff check src tests
       - name: Tests
-        run: pytest -q
+        # Env-bound drills (a11y needs Chrome+build, perf budget needs dist/)
+        # run in the dedicated job below.
+        run: pytest -q --ignore=tests/test_a11y_axe.py --ignore=tests/test_perf_budget.py
 
   kernel-and-pwa:
     runs-on: ubuntu-latest
@@ -55,6 +57,8 @@ jobs:
           python-version: "3.12"
       - name: Install node
         run: npm ci
+      - name: Build PWA
+        run: npm run build
       - name: Install python test deps
         run: |
           python -m pip install --upgrade pip
