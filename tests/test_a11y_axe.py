@@ -72,7 +72,6 @@ def _scan(page, url: str) -> list[dict]:
 
 @pytest.fixture(scope="module")
 def browser():
-    from playwright.sync_api import sync_playwright
 
     pw = sync_playwright().start()
     try:
