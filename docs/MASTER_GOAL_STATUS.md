@@ -1,7 +1,7 @@
 # AI Doctor OS v3 — Master goal status
 
-Last evidence review: 2026-08-23  
-Baseline: `588b754`  
+Last evidence review: 2026-08-25  
+Baseline: `7cca579`  
 Overall state: **active; not clinically releasable**
 
 ## Release-gate ledger
@@ -9,9 +9,9 @@ Overall state: **active; not clinically releasable**
 | Gate | Status | Current evidence | Strongest counterevidence / limitation | Next evidence-producing action |
 |---|---|---|---|---|
 | Product-contract traceability | Conditional pass | [Traceability matrix](REQUIREMENTS_TRACEABILITY.md) maps the ten master gates to artifacts and tests | Several plan-level requirements have no implementation or external evidence | Keep the matrix current at every verified milestone |
-| Production engineering | Fail | Runnable PWA, local encrypted ledger, SQLite relay, push and backup workers, Compose configuration | PostgreSQL, production identity, migrations, observability, accessibility audit, restore UI and failure-injection suite are incomplete | Close authorization isolation, then add production repository boundary and PostgreSQL |
-| Deterministic clinical safety | Conditional pass | TypeScript kernel tests and Python triage regression tests; emergency lock is model-independent | Fixture set is small and not independently clinically adjudicated | Build locked synthetic never-event corpus and cross-runtime conformance harness |
-| LLM containment | Conditional pass | Schema-bound broker, consent receipt, grounding and prohibited-language checks, disabled fallback | No task-specific qualified model or provider-drift evaluation | Add adversarial broker suite and signed qualification registry |
+| Production engineering | Fail | Runnable PWA, local encrypted ledger, SQLite relay, push and backup workers, Compose configuration; versioned per-store schema migrations | PostgreSQL, production identity, observability, accessibility audit, restore UI and failure-injection suite are incomplete | Close authorization isolation, then add production repository boundary and PostgreSQL |
+| Deterministic clinical safety | Conditional pass | TypeScript kernel tests and Python triage regression tests; emergency lock is model-independent; 33-case never-event corpus with cross-runtime negation parity (CS-01) | Fixture set not independently clinically adjudicated | Independent clinical adjudication of the corpus |
+| LLM containment | Conditional pass | Schema-bound broker, consent receipt, grounding and prohibited-language checks, disabled fallback; adversarial injection/containment suite (T-06/T-07) | No task-specific qualified model or provider-drift evaluation | Add signed qualification registry |
 | Evidence and localization | Fail | Hash-pinned preclinical cardiometabolic pack with bilingual fields; Ed25519 manifest signing + fail-closed startup verification drills (`tests/test_release_signing.py`) | No named clinical or Burmese-language approval; evidence corpus is incomplete | Create provenance register and independent review package |
 | Privacy and security | Fail | Local encryption, ciphertext-only relay schema, generic push text, device-signature verification, profile isolation and append-only record tests, automated sentinel privacy-surface audit (`tests/test_privacy_surface.py`) | No independent penetration test, browser/device cryptographic review or full deployed log-capture audit | Complete threat-model controls; independent security assessment remains external |
 | Clinical evaluation | Blocked | Thresholds and intended evaluation design are documented | No independently adjudicated Myanmar-relevant corpus or external holdout | Prepare corpus schema, adjudication protocol and reviewer package without real PHI |
