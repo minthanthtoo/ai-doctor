@@ -5,7 +5,7 @@ services:
       dockerfile: apps/pwa/Dockerfile
     restart: unless-stopped
     ports:
-      - "8443:443"
+      - "127.0.0.1:8443:443"   # loopback-bound; front with a TLS proxy for LAN access
     depends_on:
       relay:
         condition: service_healthy
@@ -15,6 +15,10 @@ services:
       context: ..
       dockerfile: Dockerfile
     restart: unless-stopped
+    user: "10001:10001"
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m
     environment:
       AI_DOCTOR_ENV: preclinical
       AI_DOCTOR_DATABASE: /data/ai_doctor_personal_steward.db
@@ -25,7 +29,7 @@ services:
     volumes:
       - ./data:/data
     expose:
-      - "8080"
+      - "8080"        # internal network only — never published to the host
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3)"]
       interval: 30s
@@ -39,6 +43,10 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     command: ["ai-doctor-push-worker"]
+    user: "10001:10001"
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m
     environment:
       AI_DOCTOR_ENV: preclinical
       AI_DOCTOR_DATABASE: /data/ai_doctor_personal_steward.db
@@ -61,6 +69,10 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     command: ["ai-doctor-backup"]
+    user: "10001:10001"
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m
     environment:
       AI_DOCTOR_ENV: preclinical
       AI_DOCTOR_DATABASE: /data/ai_doctor_personal_steward.db
@@ -72,4 +84,5 @@ services:
       - ./data:/data
       - ./backups:/backups
     depends_on:
-      - relay
+      relay:
+        condition: service_healthy
