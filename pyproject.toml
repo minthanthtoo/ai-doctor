@@ -19,7 +19,8 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
-  "pytest>=8,<9"
+  "pytest>=8,<9",
+  "hypothesis>=6,<7"
 ]
 
 [project.scripts]
