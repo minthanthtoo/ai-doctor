@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import Field
 
@@ -121,6 +122,19 @@ def create_app(
     @app.exception_handler(CaseNotFoundError)
     async def case_not_found_handler(request: Request, error: CaseNotFoundError) -> JSONResponse:
         return JSONResponse(status_code=404, content={"detail": "Case not found"})
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_error_handler(
+        request: Request, error: RequestValidationError
+    ) -> JSONResponse:
+        # Newer pydantic versions echo the offending payload back inside each
+        # error's `input` field. That would reflect client-supplied content
+        # (potential PHI) into responses and logs. Return field locations only.
+        sanitized = [
+            {"loc": item.get("loc"), "type": item.get("type"), "msg": item.get("msg")}
+            for item in error.errors()
+        ]
+        return JSONResponse(status_code=422, content={"detail": sanitized})
 
     @app.exception_handler(ClinicalWorkflowError)
     async def workflow_handler(request: Request, error: ClinicalWorkflowError) -> JSONResponse:

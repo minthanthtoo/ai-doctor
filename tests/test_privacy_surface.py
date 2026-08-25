@@ -215,7 +215,8 @@ def test_extra_fields_are_forbidden_on_sync_envelopes(tmp_path: Path):
         json=smuggled,
     )
     assert rejected.status_code == 422
-    assert CANARY_NAME in rejected.text  # validation echoes the offending input value
+    # T-05 + privacy: smuggled field rejected AND never echoed back.
+    assert CANARY_NAME not in rejected.text
     stored = client.get(
         "/v1/sync/envelopes",
         headers=PATIENT_HEADERS,
