@@ -1,7 +1,7 @@
 # AI Doctor OS v3 — Master goal status
 
-Last evidence review: 2026-08-25  
-Baseline: `7cca579`  
+Last evidence review: 2026-08-25 (R2)  
+Baseline: `e785e5d`  
 Overall state: **active; not clinically releasable**
 
 ## Release-gate ledger
@@ -13,10 +13,10 @@ Overall state: **active; not clinically releasable**
 | Deterministic clinical safety | Conditional pass | TypeScript kernel tests and Python triage regression tests; emergency lock is model-independent; 33-case never-event corpus with cross-runtime negation parity (CS-01) | Fixture set not independently clinically adjudicated | Independent clinical adjudication of the corpus |
 | LLM containment | Conditional pass | Schema-bound broker, consent receipt, grounding and prohibited-language checks, disabled fallback; adversarial injection/containment suite (T-06/T-07) | No task-specific qualified model or provider-drift evaluation | Add signed qualification registry |
 | Evidence and localization | Fail | Hash-pinned preclinical cardiometabolic pack with bilingual fields; Ed25519 manifest signing + fail-closed startup verification drills (`tests/test_release_signing.py`) | No named clinical or Burmese-language approval; evidence corpus is incomplete | Create provenance register and independent review package |
-| Privacy and security | Fail | Local encryption, ciphertext-only relay schema, generic push text, device-signature verification, profile isolation and append-only record tests, automated sentinel privacy-surface audit (`tests/test_privacy_surface.py`) | No independent penetration test, browser/device cryptographic review or full deployed log-capture audit | Complete threat-model controls; independent security assessment remains external |
+| Privacy and security | Fail | Local encryption, ciphertext-only relay schema, generic push text, device-signature verification, profile isolation and append-only record tests, automated sentinel privacy-surface audit (`tests/test_privacy_surface.py`), device roster with revocation (T-10) and push-contract drills (T-09) | No independent penetration test, browser/device cryptographic review or full deployed log-capture audit; device-scoped read auth still credential-based | Complete threat-model controls; independent security assessment remains external |
 | Clinical evaluation | Blocked | Thresholds and intended evaluation design are documented | No independently adjudicated Myanmar-relevant corpus or external holdout | Prepare corpus schema, adjudication protocol and reviewer package without real PHI |
 | Human factors | Blocked | Bilingual interface exists | No representative comprehension/accessibility study | Prepare protocol and instruments; execution requires approved participants/review |
-| Operations | Fail | Compose, health endpoint, transactional SQLite backup, generic push worker | No live private-host restore, outage, rollback or incident drill evidence | Add automated failure-injection and operator runbooks, then perform witnessed drill |
+| Operations | Fail | Compose, health endpoint, transactional SQLite backup, generic push worker; automated restore-fidelity, migration-replay and corruption-refusal drills (`tests/test_backup_drills.py`) | No live private-host restore, outage, rollback or incident drill evidence | Add operator runbooks and witnessed drill |
 | Governance and authorization | Blocked | Product boundary and promotion gates are documented | No named Myanmar clinical owner, language approver, legal determination or release signatures | Produce explicit external-review requests and signature artifacts |
 
 Statuses mean: `pass`, `conditional pass`, `fail`, `not tested`, or `blocked`. A blocked external gate does not stop locally executable preparation.
