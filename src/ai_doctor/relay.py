@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import logging
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
@@ -14,7 +15,7 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.utils import encode_dss_signature
-from fastapi import Depends, FastAPI, HTTPException, Response, status
+from fastapi import Depends, FastAPI, HTTPException, Query, Response, status
 
 from ai_doctor.auth import Principal
 from ai_doctor.config.verify_release_manifest import (
@@ -310,6 +311,76 @@ class OpaqueRelayRepository:
             for row in rows
         ]
         return {"items": items, "next_cursor": items[-1]["cursor"] if items else cursor}
+
+    def export_profile(self, profile_pseudonym: str) -> Dict[str, Any]:
+        """Full data exit: every stored row for this profile, opaque or not."""
+        with self._connection() as connection:
+            envelopes = connection.execute(
+                """
+                SELECT opaque_object_id, device_id, client_sequence, ciphertext,
+                       nonce, aad_hash, ciphertext_hash, signature,
+                       envelope_version, created_at
+                FROM relay_envelopes WHERE profile_pseudonym = ?
+                ORDER BY rowid ASC
+                """,
+                (profile_pseudonym,),
+            ).fetchall()
+            tombstones = connection.execute(
+                "SELECT tombstone_id, opaque_object_id, created_at FROM relay_tombstones"
+                " WHERE profile_pseudonym = ?",
+                (profile_pseudonym,),
+            ).fetchall()
+            devices = self.device_roster(profile_pseudonym)
+            subscriptions = connection.execute(
+                "SELECT subscription_id, endpoint, created_at FROM push_subscriptions"
+                " WHERE profile_pseudonym = ?",
+                (profile_pseudonym,),
+            ).fetchall()
+            schedules = connection.execute(
+                """
+                SELECT s.opaque_schedule_id, s.due_at, s.expires_at, s.state
+                FROM push_schedules s
+                JOIN push_subscriptions p ON p.subscription_id = s.subscription_id
+                WHERE p.profile_pseudonym = ?
+                """,
+                (profile_pseudonym,),
+            ).fetchall()
+        return {
+            "envelopes": [dict(row) for row in envelopes],
+            "tombstones": [dict(row) for row in tombstones],
+            "devices": devices,
+            "push_subscriptions": [dict(row) for row in subscriptions],
+            "push_schedules": [dict(row) for row in schedules],
+        }
+
+    def hard_delete_profile(self, profile_pseudonym: str) -> int:
+        """Purge every trace of the profile. Returns total rows removed."""
+        with self._connection() as connection:
+            removed = 0
+            for table, column in (
+                ("push_schedules", None),  # via join below
+                ("push_subscriptions", "profile_pseudonym"),
+                ("relay_envelopes", "profile_pseudonym"),
+                ("relay_tombstones", "profile_pseudonym"),
+                ("relay_devices", "profile_pseudonym"),
+                ("relay_profile_owners", "profile_pseudonym"),
+            ):
+                if table == "push_schedules":
+                    cursor = connection.execute(
+                        """
+                        DELETE FROM push_schedules WHERE subscription_id IN (
+                            SELECT subscription_id FROM push_subscriptions
+                            WHERE profile_pseudonym = ?
+                        )
+                        """,
+                        (profile_pseudonym,),
+                    )
+                else:
+                    cursor = connection.execute(
+                        f"DELETE FROM {table} WHERE {column} = ?", (profile_pseudonym,)
+                    )
+                removed += cursor.rowcount if cursor.rowcount > 0 else 0
+        return removed
 
     def add_tombstone(self, tombstone: SyncTombstone) -> None:
         with self._connection() as connection:
@@ -681,6 +752,35 @@ def mount_longitudinal_routes(
         if profile_pseudonym is None:
             raise HTTPException(status_code=404, detail="no profile bound to this credential")
         return {"devices": relay.device_roster(profile_pseudonym)}
+
+    @app.get("/v1/profile/export")
+    def export_profile(principal: Principal = Depends(authenticate)) -> Dict[str, Any]:
+        """Data exit (export): everything stored for the caller's own profile."""
+        require_patient(principal)
+        profile_pseudonym = relay.profile_for_principal(principal.user_id)
+        if profile_pseudonym is None:
+            raise HTTPException(status_code=404, detail="no profile bound to this credential")
+        return relay.export_profile(profile_pseudonym)
+
+    @app.delete("/v1/profile", status_code=status.HTTP_204_NO_CONTENT)
+    def hard_delete_profile(
+        principal: Principal = Depends(authenticate),
+        confirm: str = Query(min_length=16, max_length=200),
+    ) -> Response:
+        """Irreversible purge of every row for the caller's own profile."""
+        require_patient(principal)
+        profile_pseudonym = relay.profile_for_principal(principal.user_id)
+        if profile_pseudonym is None or profile_pseudonym != confirm:
+            # Foreign profile (credential bound elsewhere) must look identical
+            # to a bad confirmation: 404, never confirming existence.
+            if relay.profile_for_principal(principal.user_id) not in (None, confirm):
+                raise HTTPException(status_code=404, detail="no such profile for this credential")
+            raise HTTPException(status_code=422, detail="confirmation token mismatch")
+        removed = relay.hard_delete_profile(profile_pseudonym)
+        logging.getLogger("uvicorn.error").info(
+            "profile.hard_delete profile_rows_removed=%d", removed
+        )
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @app.delete("/v1/devices/{device_id}", status_code=status.HTTP_204_NO_CONTENT)
     def revoke_device(device_id: str, principal: Principal = Depends(authenticate)) -> Response:
