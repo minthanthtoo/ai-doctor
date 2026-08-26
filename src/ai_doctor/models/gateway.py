@@ -43,8 +43,31 @@ class _ModelDiagnosis(BaseModel):
 Transport = Callable[[Dict[str, Any]], Mapping[str, Any]]
 
 
+def _parse_completion_body(text: str) -> Dict[str, Any]:
+    """Parse a chat-completions body, tolerating SSE-style trailing frames.
+
+    9router returns content-type text/event-stream with the completion JSON
+    followed by a literal `data: [DONE]` frame; strict response.json() fails
+    on that. Take the first JSON object on the body instead.
+    """
+    import json as _json
+
+    try:
+        return _json.loads(text)
+    except ValueError:
+        decoder = _json.JSONDecoder()
+        for index, char in enumerate(text):
+            if char == "{" and (index == 0 or text[index - 1] != "\\"):
+                try:
+                    return decoder.raw_decode(text[index:])[0]
+                except ValueError:
+                    continue
+        raise
+
+
 class OpenAICompatibleTransport:
     """Minimal OpenAI-compatible JSON transport with no retry amplification."""
+
 
     def __init__(
         self,
@@ -76,7 +99,7 @@ class OpenAICompatibleTransport:
                 timeout=self.timeout_seconds,
             )
             response.raise_for_status()
-            body = response.json()
+            body = _parse_completion_body(response.text)
             content = body["choices"][0]["message"]["content"]
             if not isinstance(content, str):
                 raise ModelGatewayError("model content was not a JSON string")

@@ -116,6 +116,11 @@ class Settings:
             "true",
             "yes",
         }
+        # 9router convenience contract: NINE_ROUTER_BASE_URL / NINE_ROUTER_API_KEY
+        # fill the generic gateway vars when those are unset (see nine_router.py).
+        from ai_doctor.nine_router import apply_nine_router_defaults
+
+        apply_nine_router_defaults()
         model_gateway_endpoint = os.getenv("AI_DOCTOR_MODEL_GATEWAY_ENDPOINT")
         model_gateway_model = os.getenv("AI_DOCTOR_MODEL_GATEWAY_MODEL")
         allowed_hosts = tuple(
