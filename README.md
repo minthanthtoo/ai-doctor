@@ -6,9 +6,13 @@
 
 - **Does:** encrypted offline record · red-flag emergency lock (model-independent) · guided intake · possibility maps · encrypted sync to your own relay.
 - **Refuses:** diagnosis as fact, prescribing, orders, dispatch, autonomous advice — by construction, not policy.
-- **Proven:** 77 executable tests incl. a privacy-surface audit and signed-manifest drills. **Unproven:** clinical performance, comprehension studies, regulatory authorization — blocked pending external owners.
+- **Proven:** 167 executable tests (121 Python incl. privacy-surface audit, backup/corruption drills, data-exit drills · 39 kernel incl. 33-case never-event corpus · 7 PWA locale-parity) + zero-violation axe sweep + green CI on every push. **Unproven:** clinical performance, comprehension studies, regulatory authorization — blocked pending external owners.
 
 One-page boundary: [docs/BOUNDARY_ONE_PAGER.md](docs/BOUNDARY_ONE_PAGER.md) · Screenshots: [onboarding](docs/img/onboarding.png) · [recovery kit](docs/img/recovery-kit.png) · [concern intake](docs/img/concern-intake.png)
+
+## Releases
+
+Current: **`v0.2.0-preclinical`** (see [CHANGELOG.md](CHANGELOG.md)). Cut with `scripts/cut_release.py` (runs the test gates, writes the v3 manifest with `"signature": null`, tags). CI runs the Python suite, kernel+PWA suites, and the a11y/perf-budget drills on every push.
 
 ## Custody
 
